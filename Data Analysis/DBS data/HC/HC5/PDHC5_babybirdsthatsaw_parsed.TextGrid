@@ -1,0 +1,196 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 48.652426303854874 
+tiers? <exists> 
+size = 2 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "Phrase" 
+        xmin = 0 
+        xmax = 48.652426303854874 
+        intervals: size = 23 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.8132112399397073 
+            text = "" 
+        intervals [2]:
+            xmin = 0.8132112399397073 
+            xmax = 4.916857965220024 
+            text = "sent2" 
+        intervals [3]:
+            xmin = 4.916857965220024 
+            xmax = 6.10962297235708 
+            text = "" 
+        intervals [4]:
+            xmin = 6.10962297235708 
+            xmax = 9.769616911628605 
+            text = "sent2" 
+        intervals [5]:
+            xmin = 9.769616911628605 
+            xmax = 10.823955475957835 
+            text = "" 
+        intervals [6]:
+            xmin = 10.823955475957835 
+            xmax = 14.37872209357109 
+            text = "sent2" 
+        intervals [7]:
+            xmin = 14.37872209357109 
+            xmax = 15.480790244682005 
+            text = "" 
+        intervals [8]:
+            xmin = 15.480790244682005 
+            xmax = 19.3653157270365 
+            text = "sent2" 
+        intervals [9]:
+            xmin = 19.3653157270365 
+            xmax = 20.655487067025078 
+            text = "" 
+        intervals [10]:
+            xmin = 20.655487067025078 
+            xmax = 23.940629472090794 
+            text = "sent2" 
+        intervals [11]:
+            xmin = 23.940629472090794 
+            xmax = 25.177343047183886 
+            text = "" 
+        intervals [12]:
+            xmin = 25.177343047183886 
+            xmax = 28.512203864190614 
+            text = "sent2" 
+        intervals [13]:
+            xmin = 28.512203864190614 
+            xmax = 29.669093630479285 
+            text = "" 
+        intervals [14]:
+            xmin = 29.669093630479285 
+            xmax = 33.259202251761444 
+            text = "sent2" 
+        intervals [15]:
+            xmin = 33.259202251761444 
+            xmax = 34.39041466587897 
+            text = "" 
+        intervals [16]:
+            xmin = 34.39041466587897 
+            xmax = 38.07084174098167 
+            text = "sent2" 
+        intervals [17]:
+            xmin = 38.07084174098167 
+            xmax = 39.36974226779957 
+            text = "" 
+        intervals [18]:
+            xmin = 39.36974226779957 
+            xmax = 41.780597336058555 
+            text = "sent2_11" 
+        intervals [19]:
+            xmin = 41.780597336058555 
+            xmax = 42.17554921886701 
+            text = "" 
+        intervals [20]:
+            xmin = 42.17554921886701 
+            xmax = 43.51376742824956 
+            text = "sent2_4" 
+        intervals [21]:
+            xmin = 43.51376742824956 
+            xmax = 44.73816017084612 
+            text = "" 
+        intervals [22]:
+            xmin = 44.73816017084612 
+            xmax = 48.064468356079864 
+            text = "sent2" 
+        intervals [23]:
+            xmin = 48.064468356079864 
+            xmax = 48.652426303854874 
+            text = "" 
+    item [2]:
+        class = "IntervalTier" 
+        name = "SpeakingRate" 
+        xmin = 0 
+        xmax = 48.652426303854874 
+        intervals: size = 21 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.8132112399397073 
+            text = "" 
+        intervals [2]:
+            xmin = 0.8132112399397073 
+            xmax = 4.916857965220024 
+            text = "sent2" 
+        intervals [3]:
+            xmin = 4.916857965220024 
+            xmax = 6.10962297235708 
+            text = "" 
+        intervals [4]:
+            xmin = 6.10962297235708 
+            xmax = 9.769616911628605 
+            text = "sent2" 
+        intervals [5]:
+            xmin = 9.769616911628605 
+            xmax = 10.823955475957835 
+            text = "" 
+        intervals [6]:
+            xmin = 10.823955475957835 
+            xmax = 14.37872209357109 
+            text = "sent2" 
+        intervals [7]:
+            xmin = 14.37872209357109 
+            xmax = 15.480790244682005 
+            text = "" 
+        intervals [8]:
+            xmin = 15.480790244682005 
+            xmax = 19.3653157270365 
+            text = "sent2" 
+        intervals [9]:
+            xmin = 19.3653157270365 
+            xmax = 20.655487067025078 
+            text = "" 
+        intervals [10]:
+            xmin = 20.655487067025078 
+            xmax = 23.940629472090794 
+            text = "sent2" 
+        intervals [11]:
+            xmin = 23.940629472090794 
+            xmax = 25.177343047183886 
+            text = "" 
+        intervals [12]:
+            xmin = 25.177343047183886 
+            xmax = 28.512203864190614 
+            text = "sent2" 
+        intervals [13]:
+            xmin = 28.512203864190614 
+            xmax = 29.669093630479285 
+            text = "" 
+        intervals [14]:
+            xmin = 29.669093630479285 
+            xmax = 33.259202251761444 
+            text = "sent2" 
+        intervals [15]:
+            xmin = 33.259202251761444 
+            xmax = 34.39041466587897 
+            text = "" 
+        intervals [16]:
+            xmin = 34.39041466587897 
+            xmax = 38.07084174098167 
+            text = "sent2" 
+        intervals [17]:
+            xmin = 38.07084174098167 
+            xmax = 39.36974226779957 
+            text = "" 
+        intervals [18]:
+            xmin = 39.36974226779957 
+            xmax = 43.51376742824956 
+            text = "sent2" 
+        intervals [19]:
+            xmin = 43.51376742824956 
+            xmax = 44.73816017084612 
+            text = "" 
+        intervals [20]:
+            xmin = 44.73816017084612 
+            xmax = 48.064468356079864 
+            text = "sent2" 
+        intervals [21]:
+            xmin = 48.064468356079864 
+            xmax = 48.652426303854874 
+            text = "" 

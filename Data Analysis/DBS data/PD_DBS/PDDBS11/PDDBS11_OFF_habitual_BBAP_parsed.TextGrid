@@ -1,0 +1,204 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 44.02952380952381 
+tiers? <exists> 
+size = 2 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "bbp" 
+        xmin = 0 
+        xmax = 44.02952380952381 
+        intervals: size = 23 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.17586168582396317 
+            text = "" 
+        intervals [2]:
+            xmin = 0.17586168582396317 
+            xmax = 1.5433813238932992 
+            text = "bbp" 
+        intervals [3]:
+            xmin = 1.5433813238932992 
+            xmax = 4.396801415715979 
+            text = "" 
+        intervals [4]:
+            xmin = 4.396801415715979 
+            xmax = 5.579718550970315 
+            text = "bbp" 
+        intervals [5]:
+            xmin = 5.579718550970315 
+            xmax = 8.238821958764627 
+            text = "" 
+        intervals [6]:
+            xmin = 8.238821958764627 
+            xmax = 9.454818432253147 
+            text = "bbp" 
+        intervals [7]:
+            xmin = 9.454818432253147 
+            xmax = 12.337007204711647 
+            text = "" 
+        intervals [8]:
+            xmin = 12.337007204711647 
+            xmax = 13.695016284452073 
+            text = "bbp" 
+        intervals [9]:
+            xmin = 13.695016284452073 
+            xmax = 16.42681244776895 
+            text = "" 
+        intervals [10]:
+            xmin = 16.42681244776895 
+            xmax = 17.687195378742604 
+            text = "bbp" 
+        intervals [11]:
+            xmin = 17.687195378742604 
+            xmax = 20.428973218616257 
+            text = "" 
+        intervals [12]:
+            xmin = 20.428973218616257 
+            xmax = 21.850638973969517 
+            text = "bbp" 
+        intervals [13]:
+            xmin = 21.850638973969517 
+            xmax = 24.872505063340995 
+            text = "" 
+        intervals [14]:
+            xmin = 24.872505063340995 
+            xmax = 26.253441131690277 
+            text = "bbp" 
+        intervals [15]:
+            xmin = 26.253441131690277 
+            xmax = 28.444226860233165 
+            text = "" 
+        intervals [16]:
+            xmin = 28.444226860233165 
+            xmax = 29.797087592059327 
+            text = "bbp" 
+        intervals [17]:
+            xmin = 29.797087592059327 
+            xmax = 32.11563584503412 
+            text = "" 
+        intervals [18]:
+            xmin = 32.11563584503412 
+            xmax = 33.39735795638139 
+            text = "bbp" 
+        intervals [19]:
+            xmin = 33.39735795638139 
+            xmax = 35.940833824692774 
+            text = "" 
+        intervals [20]:
+            xmin = 35.940833824692774 
+            xmax = 37.22994165010397 
+            text = "bbp" 
+        intervals [21]:
+            xmin = 37.22994165010397 
+            xmax = 39.4904686717188 
+            text = "" 
+        intervals [22]:
+            xmin = 39.4904686717188 
+            xmax = 40.77053080172923 
+            text = "bbp" 
+        intervals [23]:
+            xmin = 40.77053080172923 
+            xmax = 44.02952380952381 
+            text = "" 
+    item [2]:
+        class = "IntervalTier" 
+        name = "buy" 
+        xmin = 0 
+        xmax = 44.02952380952381 
+        intervals: size = 23 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.17586168582396317 
+            text = "" 
+        intervals [2]:
+            xmin = 0.17586168582396317 
+            xmax = 0.4899896855877312 
+            text = "buy" 
+        intervals [3]:
+            xmin = 0.4899896855877312 
+            xmax = 4.398124589245346 
+            text = "" 
+        intervals [4]:
+            xmin = 4.398124589245346 
+            xmax = 4.623064089237781 
+            text = "buy" 
+        intervals [5]:
+            xmin = 4.623064089237781 
+            xmax = 8.238821958764627 
+            text = "" 
+        intervals [6]:
+            xmin = 8.238821958764627 
+            xmax = 8.511395705814284 
+            text = "buy" 
+        intervals [7]:
+            xmin = 8.511395705814284 
+            xmax = 12.337007204711647 
+            text = "" 
+        intervals [8]:
+            xmin = 12.337007204711647 
+            xmax = 12.60645345069189 
+            text = "buy" 
+        intervals [9]:
+            xmin = 12.60645345069189 
+            xmax = 16.42681244776895 
+            text = "" 
+        intervals [10]:
+            xmin = 16.42681244776895 
+            xmax = 16.712978795620288 
+            text = "buy" 
+        intervals [11]:
+            xmin = 16.712978795620288 
+            xmax = 20.428973218616257 
+            text = "" 
+        intervals [12]:
+            xmin = 20.428973218616257 
+            xmax = 20.74574096154678 
+            text = "buy" 
+        intervals [13]:
+            xmin = 20.74574096154678 
+            xmax = 24.871037543608423 
+            text = "" 
+        intervals [14]:
+            xmin = 24.871037543608423 
+            xmax = 25.177749167715756 
+            text = "buy" 
+        intervals [15]:
+            xmin = 25.177749167715756 
+            xmax = 28.4546679022649 
+            text = "" 
+        intervals [16]:
+            xmin = 28.4546679022649 
+            xmax = 28.755966543752095 
+            text = "buy" 
+        intervals [17]:
+            xmin = 28.755966543752095 
+            xmax = 32.11563584503412 
+            text = "" 
+        intervals [18]:
+            xmin = 32.11563584503412 
+            xmax = 32.41513015898127 
+            text = "buy" 
+        intervals [19]:
+            xmin = 32.41513015898127 
+            xmax = 35.94737751923801 
+            text = "" 
+        intervals [20]:
+            xmin = 35.94737751923801 
+            xmax = 36.24675154468248 
+            text = "buy" 
+        intervals [21]:
+            xmin = 36.24675154468248 
+            xmax = 39.49393298059569 
+            text = "" 
+        intervals [22]:
+            xmin = 39.49393298059569 
+            xmax = 39.77800630850057 
+            text = "buy" 
+        intervals [23]:
+            xmin = 39.77800630850057 
+            xmax = 44.02952380952381 
+            text = "" 

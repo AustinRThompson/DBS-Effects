@@ -1,0 +1,154 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 56.75390022675737 
+tiers? <exists> 
+size = 1 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "Phrase" 
+        xmin = 0 
+        xmax = 56.75390022675737 
+        intervals: size = 35 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.12364051882170292 
+            text = "" 
+        intervals [2]:
+            xmin = 0.12364051882170292 
+            xmax = 2.9127283745887564 
+            text = "sent2_11" 
+        intervals [3]:
+            xmin = 2.9127283745887564 
+            xmax = 5.711420953699727 
+            text = "" 
+        intervals [4]:
+            xmin = 5.711420953699727 
+            xmax = 8.712447978763729 
+            text = "sent2_11" 
+        intervals [5]:
+            xmin = 8.712447978763729 
+            xmax = 9.266266977118514 
+            text = "" 
+        intervals [6]:
+            xmin = 9.266266977118514 
+            xmax = 10.41880921693793 
+            text = "sent2_4" 
+        intervals [7]:
+            xmin = 10.41880921693793 
+            xmax = 11.561307946458149 
+            text = "" 
+        intervals [8]:
+            xmin = 11.561307946458149 
+            xmax = 16.755205587283807 
+            text = "sent2" 
+        intervals [9]:
+            xmin = 16.755205587283807 
+            xmax = 17.9965517596571 
+            text = "" 
+        intervals [10]:
+            xmin = 17.9965517596571 
+            xmax = 20.321665062281113 
+            text = "sent2_11" 
+        intervals [11]:
+            xmin = 20.321665062281113 
+            xmax = 20.8984373544049 
+            text = "" 
+        intervals [12]:
+            xmin = 20.8984373544049 
+            xmax = 21.95104678753081 
+            text = "sent2_4" 
+        intervals [13]:
+            xmin = 21.95104678753081 
+            xmax = 23.214685420794908 
+            text = "" 
+        intervals [14]:
+            xmin = 23.214685420794908 
+            xmax = 25.524405849746827 
+            text = "sent2_11" 
+        intervals [15]:
+            xmin = 25.524405849746827 
+            xmax = 26.486682487157005 
+            text = "" 
+        intervals [16]:
+            xmin = 26.486682487157005 
+            xmax = 27.41204416459356 
+            text = "sent2_4" 
+        intervals [17]:
+            xmin = 27.41204416459356 
+            xmax = 28.80842826366681 
+            text = "" 
+        intervals [18]:
+            xmin = 28.80842826366681 
+            xmax = 33.02547045991694 
+            text = "sent2" 
+        intervals [19]:
+            xmin = 33.02547045991694 
+            xmax = 34.21306420416905 
+            text = "" 
+        intervals [20]:
+            xmin = 34.21306420416905 
+            xmax = 36.69594788378094 
+            text = "sent2_11" 
+        intervals [21]:
+            xmin = 36.69594788378094 
+            xmax = 37.28408722107797 
+            text = "" 
+        intervals [22]:
+            xmin = 37.28408722107797 
+            xmax = 38.219763439505066 
+            text = "sent2_4" 
+        intervals [23]:
+            xmin = 38.219763439505066 
+            xmax = 39.342050761031516 
+            text = "" 
+        intervals [24]:
+            xmin = 39.342050761031516 
+            xmax = 41.698344500068245 
+            text = "sent2_11" 
+        intervals [25]:
+            xmin = 41.698344500068245 
+            xmax = 42.3979549880009 
+            text = "" 
+        intervals [26]:
+            xmin = 42.3979549880009 
+            xmax = 43.283604849184975 
+            text = "sent2_4" 
+        intervals [27]:
+            xmin = 43.283604849184975 
+            xmax = 44.57299492485364 
+            text = "" 
+        intervals [28]:
+            xmin = 44.57299492485364 
+            xmax = 46.74852107051033 
+            text = "sent2_10" 
+        intervals [29]:
+            xmin = 46.74852107051033 
+            xmax = 47.25056556566187 
+            text = "" 
+        intervals [30]:
+            xmin = 47.25056556566187 
+            xmax = 48.1630866920694 
+            text = "sent2_4" 
+        intervals [31]:
+            xmin = 48.1630866920694 
+            xmax = 51.191705647329606 
+            text = "" 
+        intervals [32]:
+            xmin = 51.191705647329606 
+            xmax = 53.48998009329458 
+            text = "sent2_11" 
+        intervals [33]:
+            xmin = 53.48998009329458 
+            xmax = 54.13648078752274 
+            text = "" 
+        intervals [34]:
+            xmin = 54.13648078752274 
+            xmax = 55.21635007898078 
+            text = "sent2_4" 
+        intervals [35]:
+            xmin = 55.21635007898078 
+            xmax = 56.75390022675737 
+            text = "" 

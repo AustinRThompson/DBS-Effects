@@ -1,0 +1,98 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 11.027573696145124 
+tiers? <exists> 
+size = 1 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "vowel" 
+        xmin = 0 
+        xmax = 11.027573696145124 
+        intervals: size = 21 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.12066847175370203 
+            text = "" 
+        intervals [2]:
+            xmin = 0.12066847175370203 
+            xmax = 0.3039461815549494 
+            text = "ae" 
+        intervals [3]:
+            xmin = 0.3039461815549494 
+            xmax = 1.0738582527346257 
+            text = "" 
+        intervals [4]:
+            xmin = 1.0738582527346257 
+            xmax = 1.2450782184700016 
+            text = "ae" 
+        intervals [5]:
+            xmin = 1.2450782184700016 
+            xmax = 2.05244220658175 
+            text = "" 
+        intervals [6]:
+            xmin = 2.05244220658175 
+            xmax = 2.2435574500258135 
+            text = "ae" 
+        intervals [7]:
+            xmin = 2.2435574500258135 
+            xmax = 3.0863122613089327 
+            text = "" 
+        intervals [8]:
+            xmin = 3.0863122613089327 
+            xmax = 3.26958997111018 
+            text = "ae" 
+        intervals [9]:
+            xmin = 3.26958997111018 
+            xmax = 4.11608832168847 
+            text = "" 
+        intervals [10]:
+            xmin = 4.11608832168847 
+            xmax = 4.262589912088809 
+            text = "ae" 
+        intervals [11]:
+            xmin = 4.262589912088809 
+            xmax = 5.592553247957734 
+            text = "" 
+        intervals [12]:
+            xmin = 5.592553247957734 
+            xmax = 5.760155890473348 
+            text = "ae" 
+        intervals [13]:
+            xmin = 5.760155890473348 
+            xmax = 6.627371136947231 
+            text = "" 
+        intervals [14]:
+            xmin = 6.627371136947231 
+            xmax = 6.817883493188001 
+            text = "ae" 
+        intervals [15]:
+            xmin = 6.817883493188001 
+            xmax = 7.7509788700569535 
+            text = "" 
+        intervals [16]:
+            xmin = 7.7509788700569535 
+            xmax = 7.914964189352806 
+            text = "ae" 
+        intervals [17]:
+            xmin = 7.914964189352806 
+            xmax = 8.844024385615104 
+            text = "" 
+        intervals [18]:
+            xmin = 8.844024385615104 
+            xmax = 9.004995268894488 
+            text = "ae" 
+        intervals [19]:
+            xmin = 9.004995268894488 
+            xmax = 10.169745152483914 
+            text = "" 
+        intervals [20]:
+            xmin = 10.169745152483914 
+            xmax = 10.322878502120483 
+            text = "ae" 
+        intervals [21]:
+            xmin = 10.322878502120483 
+            xmax = 11.027573696145124 
+            text = "" 

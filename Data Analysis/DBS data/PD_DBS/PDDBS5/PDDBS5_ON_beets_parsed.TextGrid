@@ -1,0 +1,98 @@
+File type = "ooTextFile"
+Object class = "TextGrid"
+
+xmin = 0 
+xmax = 14.174263038548753 
+tiers? <exists> 
+size = 1 
+item []: 
+    item [1]:
+        class = "IntervalTier" 
+        name = "vowel" 
+        xmin = 0 
+        xmax = 14.174263038548753 
+        intervals: size = 21 
+        intervals [1]:
+            xmin = 0 
+            xmax = 0.17809192691723014 
+            text = "" 
+        intervals [2]:
+            xmin = 0.17809192691723014 
+            xmax = 0.3725098062388488 
+            text = "i" 
+        intervals [3]:
+            xmin = 0.3725098062388488 
+            xmax = 1.7687972558499947 
+            text = "" 
+        intervals [4]:
+            xmin = 1.7687972558499947 
+            xmax = 1.936980433383636 
+            text = "i" 
+        intervals [5]:
+            xmin = 1.936980433383636 
+            xmax = 3.0093232334269664 
+            text = "" 
+        intervals [6]:
+            xmin = 3.0093232334269664 
+            xmax = 3.1325860122211227 
+            text = "i" 
+        intervals [7]:
+            xmin = 3.1325860122211227 
+            xmax = 4.380693078328032 
+            text = "" 
+        intervals [8]:
+            xmin = 4.380693078328032 
+            xmax = 4.52982243196478 
+            text = "i" 
+        intervals [9]:
+            xmin = 4.52982243196478 
+            xmax = 5.798703736389245 
+            text = "" 
+        intervals [10]:
+            xmin = 5.798703736389245 
+            xmax = 5.9856718812472565 
+            text = "i" 
+        intervals [11]:
+            xmin = 5.9856718812472565 
+            xmax = 7.493346464592671 
+            text = "" 
+        intervals [12]:
+            xmin = 7.493346464592671 
+            xmax = 7.707024344430398 
+            text = "i" 
+        intervals [13]:
+            xmin = 7.707024344430398 
+            xmax = 9.10450920720677 
+            text = "" 
+        intervals [14]:
+            xmin = 9.10450920720677 
+            xmax = 9.30260640830633 
+            text = "i" 
+        intervals [15]:
+            xmin = 9.30260640830633 
+            xmax = 10.55728044642721 
+            text = "" 
+        intervals [16]:
+            xmin = 10.55728044642721 
+            xmax = 10.732377597960904 
+            text = "i" 
+        intervals [17]:
+            xmin = 10.732377597960904 
+            xmax = 11.934753743508836 
+            text = "" 
+        intervals [18]:
+            xmin = 11.934753743508836 
+            xmax = 12.10391539838037 
+            text = "i" 
+        intervals [19]:
+            xmin = 12.10391539838037 
+            xmax = 13.42443899247055 
+            text = "" 
+        intervals [20]:
+            xmin = 13.42443899247055 
+            xmax = 13.590632899011004 
+            text = "i" 
+        intervals [21]:
+            xmin = 13.590632899011004 
+            xmax = 14.174263038548753 
+            text = "" 
