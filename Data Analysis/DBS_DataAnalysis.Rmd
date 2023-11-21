@@ -5,8 +5,7 @@ title: "DBS Effects: Data Analysis"
 # Packages
 ```{r}
 library(tidyverse) # install.packages("rlang")
-library(rio)
-library(rPraat) # install.packages("rPraat")
+
 library(ggrepel)
 library(sp)
 
@@ -18,31 +17,9 @@ library(gt)
 
 ```
 
-# Function VSA
-```{r}
-library(sp)
-cHull <- function(x,y) {
-  x1 <- na.omit(x)
-  y1 <- na.omit(y)
-  hpts <- chull(x = x1, y = y1)
-  hpts <- c(hpts, hpts[1])
-  xy.coords <- cbind(x1, y1)
-  chull.coords <- xy.coords[hpts,]
-  if (NROW(chull.coords) < 4) {
-    cHull <- NA
-  } else {
-    chull.poly <- sp::Polygon(chull.coords, hole=T)
-    cHull <- chull.poly@area
-  }
-  return(cHull)
-}
-```
-
 # Load the Data
 ```{r}
 dir.create(path = "Figures/Acoustic Data", showWarnings = F)
-dir.create(path = "Figures/Acoustic Data/Box Plots", showWarnings = F)
-dir.create(path = "Figures/Acoustic Data/Jitter Plots", showWarnings = F)
 
 speakerList <- rio::import("DBS data/Project Progress - Speakers.csv") %>%
   dplyr::rename(DBS_Status = 3) %>%
@@ -81,20 +58,6 @@ cornerDisp <- rio::import("Prepped Data/CornerDisp.csv") |>
                   Word = as.factor(Word)) |>
   base::merge(SpeakerSex) |>
   dplyr::relocate(Sex, .after = Group)
-
-aVSA <- rio::import("Prepped Data/CornerDisp.csv") |>
-    dplyr::mutate(Group = as.factor(Group),
-                  Speaker = as.factor(Speaker),
-                  DBS_Status = as.factor(DBS_Status),
-                  Word = as.factor(Word)) |>
-  base::merge(SpeakerSex) |>
-  dplyr::relocate(Sex, .after = Group) %>%
-  dplyr::group_by(Speaker,
-                  Group,
-                  Sex,
-                  DBS_Status) %>%
-    dplyr::summarise(VSA_Hz = cHull(F2, F1)) %>%
-  dplyr::mutate(VSA_kHz = VSA_Hz/1000)
 
 # dB Data
 dBData <- rio::import("Prepped Data/dB Data.csv") |>
@@ -184,1075 +147,285 @@ rm(SpeakerSex)
 ```
 
 # 1. Voicing Proportion
-## Visualizations
-Jitter Plot
-```{r}
-plotData <- f0Data |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup, ignore.case = T),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup, ignore.case = T),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker) |>
-  dplyr::mutate(F0_perActive = scale(F0_perActive)) |>
-  dplyr::ungroup()
 
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = F0_perActive,
-      color = PlotGroup) +
-  geom_jitter(width = 0.20,
-              alpha = .8) +
-  labs(x = element_blank(), y = "Voicing Proportion (z)") +
-  theme_classic() +
-  theme(legend.title = element_blank()) +
-  scale_color_manual(values = my_pal)
-
-ggsave(plot = last_plot(),
-       filename = "Figures/Acoustic Data/Jitter Plots/F0 Percent Active_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-Box Plot (z)
-```{r}
-plotData <- f0Data |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup, ignore.case = T),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup, ignore.case = T),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker) |>
-  dplyr::mutate(F0_perActive = scale(F0_perActive)) |>
-  dplyr::ungroup()
-
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = F0_perActive,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  labs(x = element_blank(), y = "Voicing Proportion (z)") +
-  coord_cartesian(ylim = c(-3.2,3.2)) +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-ggsave(plot = last_plot(),
-       filename = "Figures/Acoustic Data/Box Plots/F0 Percent Active_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-Box Plot
-```{r}
-plotData <- f0Data |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup, ignore.case = T),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup, ignore.case = T),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On")))
-
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = F0_perActive,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  labs(x = element_blank(), y = "Voicing Proportion (%)") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-ggsave(plot = last_plot(),
-       filename = "Figures/Acoustic Data/Box Plots/F0 Percent Active.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-## Models
-M0 - Fully Unconditional Model
+Model Data
 ```{r}
 modelData <- f0Data |>
   dplyr::filter(Group == "PD_DBS")
+```
 
+M0
+Fully Unconditional Model
+```{r}
 f0Data_m0 <- lmerTest::lmer(F0_perActive ~ 1 + (1|Speaker), data = modelData)
 summary(f0Data_m0)
+
 performance::icc(f0Data_m0)
 ```
 M1
 ```{r}
 
-f0Data_m1 <- lmerTest::lmer(F0_perActive ~ 1 + DBS_Status + (1|Speaker), data = modelData)
+f0Data_m1 <- lmerTest::lmer(F0_perActive ~ DBS_Status + (1|Speaker), data = modelData)
 summary(f0Data_m1)
 
 performance::check_model(f0Data_m1)
 performance::check_singularity(f0Data_m1)
+
+anova(f0Data_m0, f0Data_m1)
+```
+M2
+```{r}
+
+f0Data_m2 <- lmerTest::lmer(F0_perActive ~ DBS_Status + Sex + (1|Speaker), data = modelData)
+summary(f0Data_m2)
+
+performance::check_model(f0Data_m2)
+performance::check_singularity(f0Data_m2)
+
+anova(f0Data_m1, f0Data_m2)
+```
+M3
+```{r}
+f0Data_m3 <- lmerTest::lmer(F0_perActive ~ DBS_Status*Sex + (1|Speaker), data = modelData)
+summary(f0Data_m3)
+
+performance::check_model(f0Data_m3)
+performance::check_singularity(f0Data_m3)
+
+anova(f0Data_m2, f0Data_m3)
+```
+
+## Final Model
+```{r}
+f0Data_fm <- f0Data_m1
+summary(f0Data_fm)
 ```
 
 # 2. F2 Slope
-## Visualizations
-Jitter Plot
-```{r}
-plotData <- F2Slope |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker) |>
-  dplyr::mutate(F2_Slope = scale(F2_Slope)) |>
-  dplyr::ungroup()
-
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-F <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "F")) +
-  aes(x = PlotGroup,
-      y = F2_Slope,
-      color = PlotGroup) +
-  geom_jitter(width = 0.20,
-              alpha = .8) +
-  coord_cartesian(ylim = c(-2,3.2)) +
-  labs(x = element_blank(),
-       y = "F2 Slope (z)",
-       title = "Female Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  #facet_wrap(~Sex) +
-  ggpubr::geom_signif(comparisons = list(c("PD-DBS On", "PD-DBS Off")),
-                      annotations = "n.s., p = .024",
-                      color = "black",
-                      tip_length = 0)
-
-M <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "M")) +
-  aes(x = PlotGroup,
-      y = F2_Slope,
-      color = PlotGroup) +
-  geom_jitter(width = 0.20,
-              alpha = .8) +
-  coord_cartesian(ylim = c(-2,3.2)) +
-  labs(x = element_blank(),
-       y = "F2 Slope (z)",
-       title = "Male Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank()) +
-  scale_color_manual(values = my_pal)
-
-plot_F2slope <- F + M +
-  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
-
-ggsave(plot_F2slope, filename = "Figures/Acoustic Data/Jitter Plots/F2 Slope_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-```
-Box Plot (z)
-```{r}
-plotData <- F2Slope |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker) |>
-  dplyr::mutate(F2_Slope = scale(F2_Slope)) |>
-  dplyr::ungroup()
-
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-F <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "F")) +
-  aes(x = PlotGroup,
-      y = F2_Slope,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  coord_cartesian(ylim = c(-3.2,3.2)) +
-  labs(x = element_blank(),
-       y = "F2 Slope (z)",
-       title = "Female Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal) +
-  ggpubr::geom_signif(comparisons = list(c("PD-DBS On", "PD-DBS Off")),
-                      annotations = "n.s., p = .024",
-                      color = "black",
-                      tip_length = 0)
-
-M <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "M")) +
-  aes(x = PlotGroup,
-      y = F2_Slope,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  coord_cartesian(ylim = c(-3.2,3.2)) +
-  labs(x = element_blank(),
-       y = "F2 Slope (z)",
-       title = "Male Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-plot_F2slope <- F + M +
-  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
-
-ggsave(plot_F2slope, filename = "Figures/Acoustic Data/Box Plots/F2 Slope_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-```
-Box Plot
-```{r}
-plotData <- F2Slope |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On")))
-
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-F <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "F")) +
-  aes(x = PlotGroup,
-      y = F2_Slope,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  labs(x = element_blank(),
-       y = "F2 Slope (Hz/ms)",
-       title = "Female Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal) +
-  coord_cartesian(ylim = c(0,12)) +
-  ggpubr::geom_signif(comparisons = list(c("PD-DBS On", "PD-DBS Off")),
-                      annotations = "n.s., p = .024",
-                      color = "black",
-                      tip_length = 0)
-
-M <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "M")) +
-  aes(x = PlotGroup,
-      y = F2_Slope,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  labs(x = element_blank(),
-       y = "F2 Slope (Hz/ms)",
-       title = "Male Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal) +
-  coord_cartesian(ylim = c(0,12))
-
-plot_F2slope <- F + M +
-  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
-
-ggsave(plot_F2slope, filename = "Figures/Acoustic Data/Box Plots/F2 Slope.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-```
-## Models
-M0 - Fully Unconditional Model
+Model  Data
 ```{r}
 modelData <- F2Slope |>
   dplyr::filter(Group == "PD_DBS") |>
   dplyr::mutate(Sex = factor(Sex, levels = c("F","M")))
+```
 
+M0
+Fully Unconditional Model
+```{r}
 F2Slope_m0 <- lmerTest::lmer(F2_Slope ~ 1 + (1|Speaker), data = modelData)
 summary(F2Slope_m0)
+
 performance::icc(F2Slope_m0)
 ```
 M1
 ```{r}
-
-F2Slope_m1 <- lmerTest::lmer(F2_Slope ~ 1 + DBS_Status + (1|Speaker), data = modelData)
+F2Slope_m1 <- lmerTest::lmer(F2_Slope ~ DBS_Status + (1|Speaker), data = modelData)
 summary(F2Slope_m1)
 
 performance::check_model(F2Slope_m1)
 performance::check_singularity(F2Slope_m1)
+
+anova(F2Slope_m0, F2Slope_m1)
 ```
 
 M2
 ```{r}
-
-F2Slope_m2 <- lmerTest::lmer(F2_Slope ~ 1 + DBS_Status*Sex + (1|Speaker), data = modelData)
+F2Slope_m2 <- lmerTest::lmer(F2_Slope ~ DBS_Status + Sex + (1|Speaker), data = modelData)
 summary(F2Slope_m2)
 
-#performance::check_model(F2Slope_m2)
+performance::check_model(F2Slope_m2)
 performance::check_singularity(F2Slope_m2)
+
+anova(F2Slope_m1, F2Slope_m2)
 ```
+M3
+```{r}
+F2Slope_m3 <- lmerTest::lmer(F2_Slope ~ DBS_Status*Sex + (1|Speaker), data = modelData)
+summary(F2Slope_m3)
+
+performance::check_model(F2Slope_m3)
+performance::check_singularity(F2Slope_m3)
+
+anova(F2Slope_m2, F2Slope_m3)
+```
+## Final Model
+```{r}
+F2Slope_fm <- F2Slope_m1
+summary(F2Slope_fm)
+```
+
 # 3. Corner Dispersion
-## Visualizations
-Jitter Plot
-```{r}
-plotData <- cornerDisp |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker, Word) |>
-  dplyr::mutate(eucDist = scale(eucDist)) |>
-  dplyr::ungroup()
-  
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-F <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "F")) +
-  aes(x = PlotGroup,
-      y = eucDist,
-      color = PlotGroup) +
-  geom_jitter(width = 0.20,
-              alpha = .8) +
-  labs(x = element_blank(),
-       y = "Corner Dispersion (z)",
-       title = "Female Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank()) +
-  coord_cartesian(ylim = c(-3,3.2)) +
-  scale_color_manual(values = my_pal) +
-  ggpubr::geom_signif(comparisons = list(c("PD-DBS On", "PD-DBS Off")),
-                      annotations = "p = .02436",
-                      color = "black",
-                      tip_length = 0)
-  #facet_wrap(~Word)
-
-M <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "M")) +
-  aes(x = PlotGroup,
-      y = eucDist,
-      color = PlotGroup) +
-  geom_jitter(width = 0.20,
-              alpha = .8) +
-  labs(x = element_blank(),
-       y = "Corner Dispersion (z)",
-       title = "Male Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank()) +
-  coord_cartesian(ylim = c(-3,3.2)) +
-  scale_color_manual(values = my_pal) #+
-  #facet_wrap(~Word)
-
-plot_cornerDisp <- F + M +
-  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
-
-plot_cornerDisp_all <- ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = eucDist,
-      color = PlotGroup) +
-  geom_jitter(width = 0.20,
-              alpha = .8) +
-  labs(x = element_blank(),
-       y = "Corner Dispersion (z)") +
-  theme_classic() +
-  theme(legend.title = element_blank()) +
-  #coord_cartesian(ylim = c(-3,3.2)) +
-  scale_color_manual(values = my_pal) +
-  ggpubr::geom_signif(comparisons = list(c("PD-DBS On", "PD-DBS Off")),
-                      annotations = "p = .00451",
-                      color = "black",
-                      tip_length = 0)
-
-ggsave(plot_cornerDisp_all, filename = "Figures/Acoustic Data/Jitter Plots/Corner Dispersion_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-```
-Box Plot (z)
-```{r}
-plotData <- cornerDisp |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker, Word) |>
-  dplyr::mutate(eucDist = scale(eucDist)) |>
-  dplyr::ungroup()
-  
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-F <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "F")) +
-  aes(x = PlotGroup,
-      y = eucDist,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  coord_cartesian(ylim = c(-3.2,3.2)) +
-  labs(x = element_blank(),
-       y = "Corner Dispersion (z)",
-       title = "Female Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal) #+
-  #ggpubr::geom_signif(comparisons = list(c("PD-DBS On", "PD-DBS Off")),
-  #                    annotations = "p = .0189",
-  #                    color = "black",
-  #                    tip_length = 0)
-  #facet_wrap(~Word)
-
-M <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "M")) +
-  aes(x = PlotGroup,
-      y = eucDist,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  coord_cartesian(ylim = c(-3.2,3.2)) +
-  labs(x = element_blank(),
-       y = "Corner Dispersion (z)",
-       title = "Male Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-plot_cornerDisp <- F + M +
-  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
-
-plot_cornerDisp_all <- ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = eucDist,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  #coord_cartesian(ylim = c(-3.2,3.2)) +
-  labs(x = element_blank(),
-       y = "Corner Dispersion (z)") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal) +
-  ggpubr::geom_signif(comparisons = list(c("PD-DBS On", "PD-DBS Off")),
-                      annotations = "p = .0045",
-                      color = "black",
-                      tip_length = 0)
-
-ggsave(plot_cornerDisp_all, filename = "Figures/Acoustic Data/Box Plots/Corner Dispersion_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-ggsave(plot_cornerDisp, filename = "Figures/Acoustic Data/Box Plots/Corner Dispersion_Sex_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-Box Plot
-```{r}
-plotData <- cornerDisp |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On")))
-  
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-F <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "F")) +
-  aes(x = PlotGroup,
-      y = eucDist,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  labs(x = element_blank(),
-       y = "Corner Dispersion (Hz)",
-       title = "Female Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-M <- ggplot(data = plotData |>
-         dplyr::filter(Sex == "M")) +
-  aes(x = PlotGroup,
-      y = eucDist,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  labs(x = element_blank(),
-       y = "Corner Dispersion (Hz)",
-       title = "Male Speakers") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-plot_cornerDisp <- F + M +
-  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
-
-plot_cornerDisp_all <- ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = eucDist,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  labs(x = element_blank(),
-       y = "Corner Dispersion (Hz)") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal) +
-  ggpubr::geom_signif(comparisons = list(c("PD-DBS On", "PD-DBS Off")),
-                      annotations = "p = .0045",
-                      color = "black",
-                      tip_length = 0)
-
-ggsave(plot_cornerDisp_all, filename = "Figures/Acoustic Data/Box Plots/Corner Dispersion.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-ggsave(plot_cornerDisp, filename = "Figures/Acoustic Data/Box Plots/Corner Dispersion_Sex.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-## Models
-M0 - Fully Unconditional Model
+Model Data
 ```{r}
 modelData <- cornerDisp |>
   dplyr::filter(Group == "PD_DBS") |>
   dplyr::mutate(Sex = factor(Sex, levels = c("F","M")))
+```
 
+M0
+Fully Unconditional Model
+```{r}
 cornerDisp_m0 <- lmerTest::lmer(eucDist ~ 1 + (1|Speaker) + (1|Word), data = modelData)
 summary(cornerDisp_m0)
 performance::icc(cornerDisp_m0)
 ```
 M1
 ```{r}
-
-cornerDisp_m1 <- lmerTest::lmer(eucDist ~ 1 + DBS_Status + (1|Speaker) + (1|Word), data = modelData)
+cornerDisp_m1 <- lmerTest::lmer(eucDist ~ DBS_Status + (1|Speaker) + (1|Word), data = modelData)
 summary(cornerDisp_m1)
 
 performance::check_singularity(cornerDisp_m1)
+
+anova(cornerDisp_m0, cornerDisp_m1)
 ```
 
 M2
 ```{r}
-
-cornerDisp_m2 <- lmerTest::lmer(eucDist ~ 1 + DBS_Status*Sex + (1|Speaker) + (1|Word), data = modelData)
+cornerDisp_m2 <- lmerTest::lmer(eucDist ~ DBS_Status + Sex + (1|Speaker) + (1|Word), data = modelData)
 summary(cornerDisp_m2)
 
-#performance::check_model(F2Slope_m2)
+performance::check_model(cornerDisp_m2)
 performance::check_singularity(cornerDisp_m2)
+
+anova(cornerDisp_m1, cornerDisp_m2)
 ```
 
 M3
 ```{r}
+cornerDisp_m3 <- lmerTest::lmer(eucDist ~ DBS_Status*Sex + (1|Speaker) + (1|Word), data = modelData)
+summary(cornerDisp_m3)
 
-cornerDisp_m2 <- lmerTest::lmer(eucDist ~ 1 + DBS_Status + Sex + (1|Speaker) + (1|Word), data = modelData)
-summary(cornerDisp_m2)
+performance::check_model(cornerDisp_m3)
+performance::check_singularity(cornerDisp_m3)
 
-#performance::check_model(F2Slope_m2)
-performance::check_singularity(cornerDisp_m2)
+anova(cornerDisp_m2, cornerDisp_m3)
+```
+## Final Model
+```{r}
+cornerDisp_fm <- cornerDisp_m1
+summary(cornerDisp_fm)
 ```
 
 # 4. Artic Rate
-## Visualizations
-Jitter Plot
-```{r}
-plotData <- ArticRate |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker) |>
-  dplyr::mutate(articRate = scale(articRate)) |>
-  dplyr::ungroup()
-  
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = articRate,
-      color = PlotGroup) +
-  geom_jitter(width = 0.20,
-              alpha = .8) +
-  labs(x = element_blank(), y = "Articulation Rate (z)") +
-  theme_classic() +
-  theme(legend.title = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  ggpubr::geom_signif(comparisons = list(c("PD-DBS On", "PD-DBS Off")),
-                      annotations = "p < .001",
-                      color = "black",
-                      tip_length = 0)
-
-ggsave(plot = last_plot(),
-       filename = "Figures/Acoustic Data/Jitter Plots/Artic Rate_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-Box Plot (z)
-```{r}
-plotData <- ArticRate |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker) |>
-  dplyr::mutate(articRate = scale(articRate)) |>
-  dplyr::ungroup()
-  
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-babyBirds <- ggplot(data = plotData |>
-                      dplyr::filter(Segment == "BabyBirds")) +
-  aes(x = PlotGroup,
-      y = articRate,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  coord_cartesian(ylim = c(-3.2,3.2)) +
-  labs(x = element_blank(), y = "Articulation Rate (z)",
-       title = "Baby Birds...") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal) +
-  ggpubr::geom_signif(comparisons = list(c("PD-DBS On", "PD-DBS Off")),
-                      annotations = "p < .001",
-                      color = "black",
-                      tip_length = 0)
-
-my_pal <- c("#c658b2", "#892f78")
-
-bbp <- ggplot(data = plotData |>
-                      dplyr::filter(Segment == "bbp")) +
-  aes(x = PlotGroup,
-      y = articRate,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  coord_cartesian(ylim = c(-3.2,3.2)) +
-  labs(x = element_blank(), y = "Articulation Rate (z)",
-       title = "Buy Bobby...") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-plot_articRate <- babyBirds + bbp +
-  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
-
-ggsave(plot = babyBirds,
-       filename = "Figures/Acoustic Data/Box Plots/Artic Rate_BabyBirds_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-ggsave(plot = plot_articRate,
-       filename = "Figures/Acoustic Data/Box Plots/Artic Rate_both_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-Box Plot
-```{r}
-plotData <- ArticRate |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On")))
-  
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-babyBirds <- ggplot(data = plotData |>
-                      dplyr::filter(Segment == "BabyBirds")) +
-  aes(x = PlotGroup,
-      y = articRate,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  coord_cartesian(ylim = c(2,8.5)) +
-  labs(x = element_blank(), y = "Articulation Rate (syl/s)",
-       title = "Baby Birds...") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal) +
-  ggpubr::geom_signif(comparisons = list(c("PD-DBS On", "PD-DBS Off")),
-                      annotations = "p < .001",
-                      color = "black",
-                      tip_length = 0)
-
-my_pal <- c("#c658b2", "#892f78")
-
-bbp <- ggplot(data = plotData |>
-                      dplyr::filter(Segment == "bbp")) +
-  aes(x = PlotGroup,
-      y = articRate,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  coord_cartesian(ylim = c(2,8.5)) +
-  labs(x = element_blank(), y = "Articulation Rate (syl/s)",
-       title = "Buy Bobby...") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-plot_articRate <- babyBirds + bbp +
-  plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
-
-ggsave(plot = babyBirds,
-       filename = "Figures/Acoustic Data/Box Plots/Artic Rate_BabyBirds.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-ggsave(plot = plot_articRate,
-       filename = "Figures/Acoustic Data/Box Plots/Artic Rate_both.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-## Models
-M0 - Fully Unconditional Model
+Model Data
 ```{r}
 modelData <- ArticRate |>
   dplyr::filter(Group == "PD_DBS")
+```
 
+M0
+Fully Unconditional Model
+```{r}
 articRate_m0 <- lmerTest::lmer(articRate ~ 1 + (1|Speaker), data = modelData)
 summary(articRate_m0)
+
 performance::icc(articRate_m0)
 ```
 M1
 ```{r}
 
-articRate_m1 <- lmerTest::lmer(articRate ~ 1 + DBS_Status + (1|Speaker), data = modelData)
+articRate_m1 <- lmerTest::lmer(articRate ~ DBS_Status + (1|Speaker), data = modelData)
 summary(articRate_m1)
 
 performance::check_model(articRate_m1)
 performance::check_singularity(articRate_m1)
+
+anova(articRate_m0, articRate_m1)
 ```
+M2
+```{r}
+
+articRate_m2 <- lmerTest::lmer(articRate ~ DBS_Status + Sex + (1|Speaker), data = modelData)
+summary(articRate_m2)
+
+performance::check_model(articRate_m2)
+performance::check_singularity(articRate_m2)
+
+anova(articRate_m1, articRate_m2)
+```
+M3
+```{r}
+
+articRate_m3 <- lmerTest::lmer(articRate ~ DBS_Status*Sex + (1|Speaker), data = modelData)
+summary(articRate_m3)
+
+performance::check_model(articRate_m3)
+performance::check_singularity(articRate_m3)
+
+anova(articRate_m2, articRate_m3)
+```
+## Final Model
+```{r}
+articRate_fm <- articRate_m1
+summary(articRate_fm)
+```
+
 
 # 5. F0 Semitone
-## Visualizations
-Jitter Plots
-```{r}
-plotData <- f0Data |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup, ignore.case = T),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup, ignore.case = T),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker) |>
-  dplyr::mutate(F0_Semitone = scale(F0_Semitone)) |>
-  dplyr::ungroup()
-
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = F0_Semitone,
-      color = PlotGroup) +
-  geom_jitter(width = 0.20,
-              alpha = .8) +
-  labs(x = element_blank(), y = "Semitones (z)") +
-  theme_classic() +
-  theme(legend.title = element_blank()) +
-  scale_color_manual(values = my_pal)
-
-ggsave(plot = last_plot(),
-       filename = "Figures/Acoustic Data/Jitter Plots/F0 Semitone_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-Box Plots (z)
-```{r}
-plotData <- f0Data |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup, ignore.case = T),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup, ignore.case = T),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker) |>
-  dplyr::mutate(F0_Semitone = scale(F0_Semitone)) |>
-  dplyr::ungroup()
-
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = F0_Semitone,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  coord_cartesian(ylim = c(-3.2,3.2)) +
-  labs(x = element_blank(), y = "Semitones (z)") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-ggsave(plot = last_plot(),
-       filename = "Figures/Acoustic Data/Box Plots/F0 Semitone_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-Box Plots
-```{r}
-plotData <- f0Data |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup, ignore.case = T),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup, ignore.case = T),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On")))
-
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = F0_Semitone,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  #coord_cartesian(ylim = c(-3.2,3.2)) +
-  labs(x = element_blank(), y = "Semitones (z)") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-ggsave(plot = last_plot(),
-       filename = "Figures/Acoustic Data/Box Plots/F0 Semitone.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-## Models
-M0 - Fully Unconditional Model
+Model Data
 ```{r}
 modelData <- f0Data |>
   dplyr::filter(Group == "PD_DBS")
+```
 
+M0 - Fully Unconditional Model
+```{r}
 F0_Semitone_m0 <- lmerTest::lmer(F0_Semitone ~ 1 + (1|Speaker), data = modelData)
 summary(F0_Semitone_m0)
+
 performance::icc(F0_Semitone_m0)
 ```
 M1
 ```{r}
 
-F0_Semitone_m1 <- lmerTest::lmer(F0_Semitone ~ 1 + DBS_Status + (1|Speaker), data = modelData)
+F0_Semitone_m1 <- lmerTest::lmer(F0_Semitone ~ DBS_Status + (1|Speaker), data = modelData)
 summary(F0_Semitone_m1)
 
 performance::check_model(F0_Semitone_m1)
 performance::check_singularity(F0_Semitone_m1)
+
+anova(F0_Semitone_m0, F0_Semitone_m1)
 ```
+M2
+```{r}
+
+F0_Semitone_m2 <- lmerTest::lmer(F0_Semitone ~ DBS_Status + Sex + (1|Speaker), data = modelData)
+summary(F0_Semitone_m2)
+
+performance::check_model(F0_Semitone_m2)
+performance::check_singularity(F0_Semitone_m2)
+
+anova(F0_Semitone_m1, F0_Semitone_m2)
+```
+M3
+```{r}
+
+F0_Semitone_m3 <- lmerTest::lmer(F0_Semitone ~ DBS_Status*Sex + (1|Speaker), data = modelData)
+summary(F0_Semitone_m3)
+
+performance::check_model(F0_Semitone_m3)
+performance::check_singularity(F0_Semitone_m3)
+
+anova(F0_Semitone_m2, F0_Semitone_m3)
+```
+## Final Model
+```{r}
+F0_Semitone_fm <- F0_Semitone_m1
+summary(F0_Semitone_fm)
+```
+
 # 6. dB Range
-## Visualizations
-Jitter Plot
-```{r}
-plotData <- dBData |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup, ignore.case = T),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup, ignore.case = T),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker) |>
-  dplyr::mutate(dB_range = scale(dB_range)) |>
-  dplyr::ungroup()
-
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = dB_range,
-      color = PlotGroup) +
-  geom_jitter(width = 0.20,
-              alpha = .8) +
-  labs(x = element_blank(), y = "Intensity Range (z)") +
-  theme_classic() +
-  theme(legend.title = element_blank()) +
-  scale_color_manual(values = my_pal)
-
-ggsave(plot = last_plot(),
-       filename = "Figures/Acoustic Data/Jitter Plots/dB Range_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-Box Plot (z)
-```{r}
-plotData <- dBData |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup, ignore.case = T),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup, ignore.case = T),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On"))) |>
-  dplyr::group_by(Speaker) |>
-  dplyr::mutate(dB_range = scale(dB_range)) |>
-  dplyr::ungroup()
-
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = dB_range,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  coord_cartesian(ylim = c(-3.2,3.2)) +
-  labs(x = element_blank(), y = "Intensity Range (z)") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-ggsave(plot = last_plot(),
-       filename = "Figures/Acoustic Data/Box Plots/dB Range_z.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-Box Plot
-```{r}
-plotData <- dBData |>
-  dplyr::mutate(PlotGroup = paste(Group,DBS_Status),
-                PlotGroup = gsub(" ", "", PlotGroup),
-                PlotGroup = gsub("_", "-", PlotGroup),
-                PlotGroup = gsub("DBSOn", "DBS On", PlotGroup, ignore.case = T),
-                PlotGroup = gsub("DBSOff", "DBS Off", PlotGroup, ignore.case = T),
-                PlotGroup = factor(PlotGroup, levels = c("HC", "PD", "PD-DBS Off","PD-DBS On")))
-
-# Colors
-my_pal <- c("#5fbf7d", "#276fbf", "#c658b2", "#892f78")
-  
-ggplot(data = plotData) +
-  aes(x = PlotGroup,
-      y = dB_range,
-      color = PlotGroup,
-      fill = PlotGroup) +
-  geom_boxplot(alpha = .5) +
-  #coord_cartesian(ylim = c(-3.2,3.2)) +
-  labs(x = element_blank(), y = "Intensity Range (dB)") +
-  theme_classic() +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) +
-  scale_color_manual(values = my_pal) +
-  scale_fill_manual(values = my_pal)
-
-ggsave(plot = last_plot(),
-       filename = "Figures/Acoustic Data/Box Plots/dB Range.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-## Models
-M0 - Fully Unconditional Model
+Model Data
 ```{r}
 modelData <- dBData |>
   dplyr::filter(Group == "PD_DBS")
+```
 
+M0 - Fully Unconditional Model
+```{r}
 dB_range_m0 <- lmerTest::lmer(dB_range ~ 1 + (1|Speaker), data = modelData)
 summary(dB_range_m0)
+
 performance::icc(dB_range_m0)
 ```
 M1
@@ -1263,6 +436,40 @@ summary(dB_range_m1)
 
 performance::check_model(dB_range_m1)
 performance::check_singularity(dB_range_m1)
+
+anova(dB_range_m0, dB_range_m1)
+```
+## Final Model
+```{r}
+dB_range_fm <- dB_range_m1
+summary(dB_range_fm)
+```
+
+# Model Table
+```{r}
+sjPlot::tab_model(
+  f0Data_fm,
+  F2Slope_fm,
+  cornerDisp_fm,
+  articRate_fm,
+  F0_Semitone_fm,
+  dB_range_fm,
+  show.p = T,
+  #show.reflvl = T,
+  show.ci = F,
+  p.style = "stars",
+  p.threshold = c(.007),
+  emph.p = T,
+  pred.labels = c(
+  "(Intercept) DBS-Off",
+  "DBS-On"),
+  dv.labels = c("Voicing Proportion (%)",
+                "F2 Slope (Hz/ms)",
+                "Vowel Dispersion (Hz)",
+                "Articulation Rate (syl/s)",
+                "F0 Variation (Semitone)",
+                "Intensity Variation (dB)")
+)
 ```
 
 
@@ -1390,7 +597,7 @@ plot <- plotData %>%
     linetype = "longdash",
     position = position_dodge(width = 0.3)) +
   
-  # Plotting the points, color by Speaker
+  # Plotting the points for each speaker
   geom_point(
     size = pointSize,
     position = position_dodge(width = 0.3)) +
@@ -1423,8 +630,7 @@ plot <- plotData %>%
 
 plot
 
-ggsave(filename = "Acoustic Measures.png",
-       path = "Figures/Individual Speaker Differences",
+ggsave(filename = "Figures/Acoustic Measures.png",
        plot = plot,
        height = 4,
        width = 6,
@@ -1444,7 +650,7 @@ plotData_cornerDisp <- cornerDisp |>
   tidyr::pivot_longer(cols = eucDist,
                       names_to = "Measure",
                       values_to = "Value") %>%
-    dplyr::mutate(Speaker = factor(Speaker,
+  dplyr::mutate(Speaker = factor(Speaker,
                                  levels = c(
                                    "PDDBS1",
                                    "PDDBS2",
@@ -1466,7 +672,39 @@ plotData_cornerDisp <- cornerDisp |>
                                    "PD-DBS8",
                                    "PD-DBS9",
                                    "PD-DBS11"
-                                 )))
+                                 )),
+                Measure = factor(Measure,
+                                 levels = c(
+                                   "F0_perActive",
+                                   "F2_Slope",
+                                   "eucDist",
+                                   "articRate",
+                                   "F0_Semitone",
+                                   "dB_range"
+                                 ),
+                                 labels = c(
+                                   "Voicing Proportion (%)",
+                                   "F2 Slope (Hz/ms)",
+                                   "Vowel Dispersion (Hz)",
+                                   "Articulation Rate (syl/s)",
+                                   "F0 Range (Semitone)",
+                                   "Intensity Range (dB)"
+                                   )),
+                Word = factor(Word, 
+                              levels = c(
+                                "bat",
+                                "bots",
+                                "beets",
+                                "boots"
+                              ),
+                              labels = c(
+                                "bat",
+                                "bot",
+                                "beet",
+                                "boot"
+                              )),
+                label = gsub("[^0-9.-]", "", Speaker),
+                label = gsub("-", "", label))
 
 plot_vowelDisp <- plotData_cornerDisp %>%
   ggplot() +
@@ -1474,15 +712,34 @@ plot_vowelDisp <- plotData_cornerDisp %>%
       y = Value,
       group = Speaker) +
   
-  # Plotting the line
-  geom_line() +
+    # Plotting the line
+  geom_line(
+    color = "black",
+    linetype = "longdash",
+    position = position_dodge(width = 0.3)) +
   
-  # Plotting the points, color by Speaker
-  geom_point(aes(color = Speaker),
-             size = pointSize) +
+  # Plotting the points for each speaker
+  geom_point(
+    size = pointSize,
+    position = position_dodge(width = 0.3)) +
+
+  # Labels
+  geom_text(aes(label = label),
+            color = "white",
+            size = 2,
+            fontface = "bold",
+    position = position_dodge(width = 0.3)) +
+  
+  # Mean line
+  geom_smooth(method = "lm",
+              show.legend = T,
+              se = F,
+              inherit.aes = F,
+              aes(x = DBS_Status,
+                  y = Value,
+                  group = Measure)) +
   
   # Scaling & fixing the theme
-  #coord_cartesian(ylim = c(0,100)) +
   labs(x = "DBS Status",
        y = "") +
   
@@ -1494,11 +751,10 @@ plot_vowelDisp <- plotData_cornerDisp %>%
 
 plot_vowelDisp
 
-ggsave(filename = "Vowel Dispersion by Vowel.png",
-       path = "Figures/Individual Speaker Differences",
+ggsave(filename = "Figures/Vowel Dispersion by Vowel.png",
        plot = plot_vowelDisp,
        height = 4,
-       width = 6,
+       width = 4,
        units = "in",
        scale = 1.3)
 ```

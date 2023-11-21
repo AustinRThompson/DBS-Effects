@@ -5,14 +5,8 @@ title: "DBS Effects: Perceptual Data Analysis"
 # Packages
 ```{r}
 library(tidyverse) # install.packages("rlang")
-library(rio)
-library(rPraat) # install.packages("rPraat")
-library(ggrepel)
-
-library(ggpubr)
 library(lmerTest) # install.packages("lmerTest")
 library(performance) # install.packages("performance")
-library(patchwork)
 ```
 
 # Load the Data
@@ -42,8 +36,8 @@ listenerRatings_wide <- listenerRatings |>
   base::merge(., SpeakerSex)
 
 dir.create("Figures/Perceptual Plots", showWarnings = F)
-dir.create("Figures/Perceptual Plots/Raw",showWarnings = F)
-dir.create("Figures/Perceptual Plots/Z",showWarnings = F)
+dir.create("Figures/Perceptual Plots/Raw", showWarnings = F)
+dir.create("Figures/Perceptual Plots/Z", showWarnings = F)
 ```
 ## Boxplot function
 ```{r}
@@ -115,6 +109,7 @@ M0
 ```{r}
 ratings_m0 <- lmerTest::lmer(Rating ~ 1 + (1|Speaker) + (1|ListenerID), data = modelData)
 summary(ratings_m0)
+
 performance::icc(ratings_m0)
 ```
 M1
@@ -125,8 +120,10 @@ ratings_m1 <- lmerTest::lmer(Rating ~ 1 + ratingType +
                              data = modelData)
 summary(ratings_m1)
 
-#performance::check_model(ratings_m1)
+performance::check_model(ratings_m1)
 performance::check_singularity(ratings_m1)
+
+anova(ratings_m0, ratings_m1)
 ```
 M2
 ```{r}
@@ -136,8 +133,10 @@ ratings_m2 <- lmerTest::lmer(Rating ~ 1 + ratingType*DBS_Status +
                              data = modelData)
 summary(ratings_m2)
 
-#performance::check_model(ratings_m2)
+performance::check_model(ratings_m2)
 performance::check_singularity(ratings_m2)
+
+anova(ratings_m1, ratings_m2)
 ```
 ```{r}
 # Load the required package
@@ -209,176 +208,6 @@ pairwiseTable_t(pairs(emms)) %>%
   ) %>%
   gt::gtsave(filename = "Perceptual Pairwise Comparisons.html",
              path = "Tables")
-```
-
-
-# 1. Intelligibility
-## Visualizations
-Box Plot
-```{r}
-perceptual_BoxPlot(data = listenerRatings |>
-                     dplyr::filter(ratingType == "Int"),
-                   ylabel = "Intelligibility",
-                   norm = FALSE)
-
-
-ggsave(last_plot(), filename = "Figures/Perceptual Plots/Raw/Int.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-perceptual_BoxPlot(data = listenerRatings |>
-                     dplyr::filter(ratingType == "Int"),
-                   ylabel = "Intelligibility (Z)",
-                   norm = TRUE)
-
-ggsave(last_plot(), filename = "Figures/Perceptual Plots/Z/Int.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-```
-
-# 2. Listening Effort
-## Visualizations
-Boxplots
-```{r}
-perceptual_BoxPlot(data = listenerRatings |>
-                     dplyr::filter(ratingType == "LE"),
-                   ylabel = "Listening Effort",
-                   norm = FALSE)
-
-ggsave(last_plot(), filename = "Figures/Perceptual Plots/Raw/LE.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-perceptual_BoxPlot(data = listenerRatings |>
-                     dplyr::filter(ratingType == "LE"),
-                   ylabel = "Listening Effort (z)",
-                   norm = TRUE)
-
-ggsave(last_plot(), filename = "Figures/Perceptual Plots/Z/LE.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-
-
-# 3. Voice Quality
-## Visualizations
-Boxplots
-```{r}
-perceptual_BoxPlot(data = listenerRatings |>
-                     dplyr::filter(ratingType == "VQ"),
-                   ylabel = "Voice Quality",
-                   norm = FALSE)
-
-ggsave(last_plot(), filename = "Figures/Perceptual Plots/Raw/VQ.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-perceptual_BoxPlot(data = listenerRatings |>
-                     dplyr::filter(ratingType == "VQ"),
-                   ylabel = "Voice Quality (z)",
-                   norm = TRUE)
-
-ggsave(last_plot(), filename = "Figures/Perceptual Plots/Z/VQ.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-listenerRatings  |>
-  dplyr::filter(ratingType == "VQ") %>%
-  dplyr::filter(Group == "PD_DBS") %>%
-  dplyr::group_by(Speaker, Group, Sex, DBS_Status) %>%
-  dplyr::summarise(VQ = mean(Rating, na.rm = T)) %>%
-  dplyr::ungroup() %>%
-  dplyr::mutate(Speaker = factor(Speaker,
-                                 levels = c(
-                                   "PDDBS1",
-                                   "PDDBS2",
-                                   "PDDBS4",
-                                   "PDDBS5",
-                                   "PDDBS6",
-                                   "PDDBS7",
-                                   "PDDBS8",
-                                   "PDDBS9",
-                                   "PDDBS11"
-                                   ),
-                                 labels = c(
-                                   "PD-DBS1",
-                                   "PD-DBS2",
-                                   "PD-DBS4",
-                                   "PD-DBS5",
-                                   "PD-DBS6",
-                                   "PD-DBS7",
-                                   "PD-DBS8",
-                                   "PD-DBS9",
-                                   "PD-DBS11"
-                                 ))) %>%
-  ggplot() +
-  aes(x = DBS_Status,
-      y = VQ,
-      group = Speaker,
-      color = Speaker) +
-  geom_point() +
-  geom_line() +
-  theme_classic()
-  
-```
-
-
-# 4. Articulatory Precision
-## Visualizations
-Boxplots
-```{r}
-perceptual_BoxPlot(data = listenerRatings |>
-                     dplyr::filter(ratingType == "AP"),
-                   ylabel = "Artic Precision",
-                   norm = FALSE)
-
-ggsave(last_plot(), filename = "Figures/Perceptual Plots/Raw/AP.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-perceptual_BoxPlot(data = listenerRatings |>
-                     dplyr::filter(ratingType == "AP"),
-                   ylabel = "Artic Precision (z)",
-                   norm = TRUE)
-
-ggsave(last_plot(), filename = "Figures/Perceptual Plots/Z/AP.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-```
-
-
-# 5. Prosody
-## Visualizations
-Boxplots
-```{r}
-perceptual_BoxPlot(data = listenerRatings |>
-                     dplyr::filter(ratingType == "Pro"),
-                   ylabel = "Prosody",
-                   norm = FALSE)
-
-ggsave(last_plot(), filename = "Figures/Perceptual Plots/Raw/Pro.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
-
-perceptual_BoxPlot(data = listenerRatings |>
-                     dplyr::filter(ratingType == "Pro"),
-                   ylabel = "Prosody (z)",
-                   norm = TRUE)
-
-ggsave(last_plot(), filename = "Figures/Perceptual Plots/Z/Pro.png",
-       height = 4.5,
-       width = 7,
-       scale = .9)
 ```
 
 # All Perceptual Measures
@@ -489,8 +318,7 @@ plot <- plotData %>%
 
 plot
 
-ggsave(filename = "Perceptual Measures.png",
-       path = "Figures/Individual Speaker Differences",
+ggsave(filename = "Figures/Perceptual Measures.png",
        plot = plot,
        height = 4,
        width = 6,
@@ -499,54 +327,6 @@ ggsave(filename = "Perceptual Measures.png",
 ```
 
 
-# Individual Plot
-```{r}
-plotData <- listenerRatings |>
-  dplyr::filter(Group == "PD_DBS") |>
-  dplyr::group_by(Speaker, Group, DBS_Status, ratingType) |>
-  dplyr::summarise(Rating = mean(Rating, na.rm = T)) |>
-  dplyr::ungroup() |>
-  dplyr::mutate(ratingType = factor(ratingType, levels = c("Int","LE","AP","Pro","VQ")),
-                Speaker = factor(Speaker,
-                                 levels = c(
-                                   "PDDBS1",
-                                   "PDDBS2",
-                                   "PDDBS4",
-                                   "PDDBS5",
-                                   "PDDBS6",
-                                   "PDDBS7",
-                                   "PDDBS8",
-                                   "PDDBS9",
-                                   "PDDBS11"
-                                   ),
-                                 labels = c(
-                                   "PD-DBS1",
-                                   "PD-DBS2",
-                                   "PD-DBS4",
-                                   "PD-DBS5",
-                                   "PD-DBS6",
-                                   "PD-DBS7",
-                                   "PD-DBS8",
-                                   "PD-DBS9",
-                                   "PD-DBS11"
-                                 )))
-
-ggplot(data = plotData) +
-  aes(x = ratingType,
-      y = Rating,
-      color = Speaker,
-      group = Speaker) +
-  geom_line() +
-  geom_point() +
-  labs(x = element_blank(), y = "Rating (%)") +
-  theme_bw() +
-  facet_wrap(~DBS_Status)
-
-ggsave(last_plot(), filename = "Figures/Perceptual Plots/Individual Speakers.png",
-       height = 4.5,
-       width = 9,
-       scale = .9)
-```
 
 ```{r}
 perceptualDifferences <- plotData %>%
