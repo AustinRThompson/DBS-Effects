@@ -55,3 +55,10 @@ rsconnect/
 
 # Ignore Powerpoints
 *.pptx
+.pptx
+/*.pptx
+
+*.ppt
+.ppt
+/*.ppt
+
