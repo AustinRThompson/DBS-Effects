@@ -5,6 +5,9 @@ title: "DBS Effects: Data Analysis"
 # Packages
 ```{r}
 library(tidyverse) # install.packages("rlang")
+library(emmeans)
+library(sjPlot) # install.packages("sjPlot")
+library(imputeTS) # install.packages('imputeTS')
 
 library(ggrepel)
 library(sp)
@@ -19,8 +22,6 @@ library(gt)
 
 # Load the Data
 ```{r}
-dir.create(path = "Figures/Acoustic Data", showWarnings = F)
-
 speakerList <- rio::import("DBS data/Project Progress - Speakers.csv") %>%
   dplyr::rename(DBS_Status = 3) %>%
   dplyr::mutate(Sex = as.factor(Sex),
@@ -32,8 +33,23 @@ SpeakerSex <- speakerList |>
   dplyr::select(Speaker, Sex) |>
   unique()
 
+# Perceptual Ratings ----
+data_listenerRatings <- rio::import(file = "Prepped Data/Perceptual Data/Listener Ratings.csv") |>
+  dplyr::mutate(ListenerID = as.factor(ListenerID),
+                Speaker = as.factor(Speaker),
+                Group = as.factor(Group),
+                DBS_Status = as.factor(DBS_Status),
+                Dimension = as.factor(ratingType)) %>%
+    base::merge(., SpeakerSex) %>%
+  dplyr::filter(Group == "PD_DBS")
+
+data_listenerRatings_wide <- data_listenerRatings |>
+  dplyr::select(!c(Rel_Rating, ratingType)) |>
+  tidyr::pivot_wider(names_from = Dimension,
+                     values_from = Rating)
+
 # Artic Rate ----
-ArticRate <- rio::import("Prepped Data/Artic Rate.csv") |>
+data_articRate <- rio::import("Prepped Data/Artic Rate.csv") |>
     dplyr::mutate(Group = as.factor(Group),
                   Speaker = as.factor(Speaker),
                   DBS_Status = as.factor(DBS_Status),
@@ -43,7 +59,7 @@ ArticRate <- rio::import("Prepped Data/Artic Rate.csv") |>
 
 
 # F2 Slope ----
-F2Slope <- rio::import("Prepped Data/F2 Slope Data.csv") |>
+data_f2Slope <- rio::import("Prepped Data/F2 Slope Data.csv") |>
     dplyr::mutate(Group = as.factor(Group),
                   Speaker = as.factor(Speaker),
                   DBS_Status = as.factor(DBS_Status)) |>
@@ -51,16 +67,16 @@ F2Slope <- rio::import("Prepped Data/F2 Slope Data.csv") |>
   dplyr::relocate(Sex, .after = Group)
 
 # Corner Dispersion
-cornerDisp <- rio::import("Prepped Data/CornerDisp.csv") |>
+data_cornerDisp <- rio::import("Prepped Data/CornerDisp.csv") |>
     dplyr::mutate(Group = as.factor(Group),
                   Speaker = as.factor(Speaker),
                   DBS_Status = as.factor(DBS_Status),
-                  Word = as.factor(Word)) |>
+                  Vowel = as.factor(Word)) |>
   base::merge(SpeakerSex) |>
   dplyr::relocate(Sex, .after = Group)
 
 # dB Data
-dBData <- rio::import("Prepped Data/dB Data.csv") |>
+data_dBData <- rio::import("Prepped Data/dB Data.csv") |>
     dplyr::mutate(Group = as.factor(Group),
                   Speaker = as.factor(Speaker),
                   DBS_Status = ifelse(grepl(pattern = "On",
@@ -78,7 +94,7 @@ dBData <- rio::import("Prepped Data/dB Data.csv") |>
   dplyr::relocate(Sex, .after = Group)
 
 # F0 Data
-f0Data <- rio::import("Prepped Data/F0 Data.csv") |>
+data_f0Data <- rio::import("Prepped Data/F0 Data.csv") |>
     dplyr::mutate(Group = as.factor(Group),
                   Speaker = as.factor(Speaker),
                   DBS_Status = ifelse(grepl(pattern = "On",
@@ -99,65 +115,193 @@ f0Data <- rio::import("Prepped Data/F0 Data.csv") |>
 alpha <- .05 / 7
 ```
 
+# Reliability
+## Intra-listener Reliability
+```{r}
+data_intraListener <- data_listenerRatings %>%
+  dplyr::filter(!is.na(Rel_Rating))
 
-# Speaking Rate
-```{r, eval = F}
-speakingRate_BabyBirds <- rio::import("Prepped Data/Speaking Rate.csv") |>
-    dplyr::mutate(Group = as.factor(Group),
-                  Speaker = as.factor(Speaker),
-                  DBS_Status = as.factor(DBS_Status),
-                  Segment = "BabyBirds") |>
-  base::merge(SpeakerSex) |>
-  dplyr::relocate(Sex, .after = Group)
+intraListener_m1 <- lmerTest::lmer(Rating ~ Rel_Rating +
+                                     (1|ListenerID),
+                                   data = data_intraListener)
+summary(intraListener_m1)
 
-speakingRate_bbp <- rio::import("Prepped Data/Speaking Rate_bbap.csv") |>
-    dplyr::mutate(Group = as.factor(Group),
-                  Speaker = as.factor(Speaker),
-                  DBS_Status = as.factor(DBS_Status),
-                  Segment = "bbp") |>
-  dplyr::rename(speakingRate = SpeakingRate) |>
-  base::merge(SpeakerSex) |>
-  dplyr::relocate(Sex, .after = Group)
-
-speakingRate <- rbind(speakingRate_BabyBirds, speakingRate_bbp) |>
-  dplyr::mutate(Segment = as.factor(Segment))
+# Calculate the conditional and marginal R2 values
+intraListener_r2 <- performance::r2_nakagawa(intraListener_m1)
 ```
 
-Vowel Duration
+Interpretation
 ```{r}
-# Vowel Duration
-vowelData <- rio::import("Prepped Data/Vowel Data.csv") |>
-    dplyr::mutate(Group = as.factor(Group),
-                  Speaker = as.factor(Speaker),
-                  DBS_Status = as.factor(DBS_Status),
-                  Word = as.factor(Word)) |>
-  base::merge(SpeakerSex) |>
-  dplyr::relocate(Sex, .after = Group)
+paste0("The marginal R^2 reflects the proportion of the variance of the first ratings that are explained by the variance of the second ratings alone. The marginal R^2 was ", round(intraListener_r2$R2_marginal, digits = 2),".")
 
-# Buy Duration
-buyDur <- rio::import("Prepped Data/Buy Duration.csv") |>
-    dplyr::mutate(Group = as.factor(Group),
-                  Speaker = as.factor(Speaker),
-                  DBS_Status = as.factor(DBS_Status)) |>
-  base::merge(SpeakerSex) |>
-  dplyr::relocate(Sex, .after = Group)
-  
-rm(SpeakerSex)
+paste0("The conditional R^2 reflects the proportion of the variance of the first ratings that are explained by the variance of the second ratings, while accounting for speaker and listener effects. The conditional R^2 was ", round(intraListener_r2$R2_conditional, digits = 2),".")
+
+print("Taken together, these R^2 values indicate good intra-listener reliability.")
+```
+## Inter-Listener Reliability
+```{r}
+data_interListener <- data_listenerRatings_wide %>%
+  na.omit() %>%
+  dplyr::filter(Speaker != "PDDBS4") %>%
+  dplyr::filter(Speaker != "PDDBS1") %>%
+  tidyr::pivot_longer(
+    cols = Pro:AP,
+    names_to = "Dimension",
+    values_to = "Rating"
+  ) %>%
+  split(.$DBS_Status)
+
+inter_Off <- data_interListener$Off %>%
+    split(.$Dimension) %>%
+  map(\(df) tidyr::pivot_wider(
+    id_cols = ListenerID,
+    names_from = Speaker,
+    values_from = Rating,
+    data = df
+  )) %>%
+  #map(\(df) imputeTS::na_mean(df)) %>%
+  map(\(df) dplyr::select(!ListenerID, .data = df)) %>%
+  map(~psych::ICC(as.matrix(.))$results) %>%
+  bind_rows(.id = "Dimension")  %>%
+  dplyr::filter(type == "ICC3k") # ICC3k == Consistency, ICC2k == absolute agreement
+
+inter_On <- data_interListener$On %>%
+    split(.$Dimension) %>%
+  map(\(df) tidyr::pivot_wider(
+    id_cols = ListenerID,
+    names_from = Speaker,
+    values_from = Rating,
+    data = df
+  )) %>%
+  map(\(df) imputeTS::na_mean(df)) %>%
+  map(\(df) dplyr::select(!ListenerID, .data = df)) %>%
+  map(~psych::ICC(as.matrix(.))$results) %>%
+  bind_rows(.id = "Dimension")  %>%
+  dplyr::filter(type == "ICC3k") 
+
+numformat <- function(x, digits = 2) { 
+    ncode <- paste0("%.", digits, "f")
+    sub("^(-?)0.", "\\1.", sprintf(ncode, x))
+}
+
+inter_Rel <- rbind(inter_Off %>%
+                     dplyr::mutate(DBS_Status = "Off"),
+                   inter_On %>%
+                     dplyr::mutate(DBS_Status = "On")) %>%
+  dplyr::mutate(
+    p.value = ifelse(p < .001, "p < .001",paste0("p = ",numformat(p, digits = 3))),
+    Interrater = paste0(
+      round(.$ICC, digits = 2),
+      " (",
+      round(.$`lower bound`, digits = 2),
+      " - ", round(.$`upper bound`, digits = 2),
+      ", ",
+      p.value,
+      ")"
+  ))
+
+t_NA <- inter_Off$Int
+
+t <- inter_Off$Int %>%
+  imputeTS::na_mean()
+
+data_interListener_off <- data_interListener %>%
+  split(.$Dimension) %>%
+  map(\(df) tidyr::pivot_wider(
+    id_cols = ListenerID,
+    names_from = Speaker,
+    values_from = Rating,
+    data = df
+  ))
+
+
+```
+
+
+# 0. Perceptual Ratings
+
+Model Data
+```{r}
+data_modelData <- data_listenerRatings %>%
+  dplyr::filter(Group == "PD_DBS")
+```
+
+M0
+```{r}
+ratings_m0 <- lmerTest::lmer(Rating ~ 1 +
+                               (1|Speaker) +
+                               (1|ListenerID),
+                             data = data_modelData)
+summary(ratings_m0)
+
+performance::icc(ratings_m0)
+```
+M1
+```{r}
+ratings_m1 <- lmerTest::lmer(Rating ~ Dimension +
+                               (1|Speaker) +
+                               (1|ListenerID),
+                             data = data_modelData)
+summary(ratings_m1)
+
+performance::check_model(ratings_m1)
+performance::check_singularity(ratings_m1)
+
+anova(ratings_m0, ratings_m1)
+```
+M2
+```{r}
+ratings_m2 <- lmerTest::lmer(Rating ~ Dimension*DBS_Status +
+                               (1|Speaker) +
+                               (1|ListenerID),
+                             data = data_modelData)
+summary(ratings_m2)
+
+performance::check_model(ratings_m2)
+performance::check_singularity(ratings_m2)
+
+anova(ratings_m1, ratings_m2)
+```
+## Final Model
+```{r}
+ratings_fm <- ratings_m2
+summary(ratings_fm)
+
+# Saving the Model
+dir.create("Models", showWarnings = F)
+base::saveRDS(ratings_fm,
+        file = "Models/ratings_fm.rds")
+
+# Removing other models
+rm(list=ls(pattern="_m"))
+```
+
+## EMMeans
+To examine how the DBS status vary for each dimension, we examine the estimated marginal means.
+
+```{r}
+# Create the emmeans object
+emms <- emmeans(ratings_fm, ~ DBS_Status | Dimension)
+
+# Perform pairwise comparisons
+pairwise <- pairs(emms)
+
+# Display the pairwise comparisons
+summary(pairwise)
 
 ```
 
 # 1. Voicing Proportion
-
 Model Data
 ```{r}
-modelData <- f0Data |>
+data_modelData <- data_f0Data |>
   dplyr::filter(Group == "PD_DBS")
 ```
 
 M0
 Fully Unconditional Model
 ```{r}
-f0Data_m0 <- lmerTest::lmer(F0_perActive ~ 1 + (1|Speaker), data = modelData)
+f0Data_m0 <- lmerTest::lmer(F0_perActive ~ 1 + (1|Speaker), data = data_modelData)
 summary(f0Data_m0)
 
 performance::icc(f0Data_m0)
@@ -165,7 +309,7 @@ performance::icc(f0Data_m0)
 M1
 ```{r}
 
-f0Data_m1 <- lmerTest::lmer(F0_perActive ~ DBS_Status + (1|Speaker), data = modelData)
+f0Data_m1 <- lmerTest::lmer(F0_perActive ~ DBS_Status + (1|Speaker), data = data_modelData)
 summary(f0Data_m1)
 
 performance::check_model(f0Data_m1)
@@ -176,7 +320,7 @@ anova(f0Data_m0, f0Data_m1)
 M2
 ```{r}
 
-f0Data_m2 <- lmerTest::lmer(F0_perActive ~ DBS_Status + Sex + (1|Speaker), data = modelData)
+f0Data_m2 <- lmerTest::lmer(F0_perActive ~ DBS_Status + Sex + (1|Speaker), data = data_modelData)
 summary(f0Data_m2)
 
 performance::check_model(f0Data_m2)
@@ -186,7 +330,9 @@ anova(f0Data_m1, f0Data_m2)
 ```
 M3
 ```{r}
-f0Data_m3 <- lmerTest::lmer(F0_perActive ~ DBS_Status*Sex + (1|Speaker), data = modelData)
+f0Data_m3 <- lmerTest::lmer(F0_perActive ~ DBS_Status*Sex +
+                              (1|Speaker),
+                            data = data_modelData)
 summary(f0Data_m3)
 
 performance::check_model(f0Data_m3)
@@ -199,12 +345,20 @@ anova(f0Data_m2, f0Data_m3)
 ```{r}
 f0Data_fm <- f0Data_m1
 summary(f0Data_fm)
+
+# Saving the Model
+dir.create("Models", showWarnings = F)
+saveRDS(f0Data_fm,
+        file = "Models/f0Data_fm.rds")
+
+# Removing other models
+rm(list=ls(pattern="_m"))
 ```
 
 # 2. F2 Slope
 Model  Data
 ```{r}
-modelData <- F2Slope |>
+data_modelData <- data_f2Slope |>
   dplyr::filter(Group == "PD_DBS") |>
   dplyr::mutate(Sex = factor(Sex, levels = c("F","M")))
 ```
@@ -212,14 +366,14 @@ modelData <- F2Slope |>
 M0
 Fully Unconditional Model
 ```{r}
-F2Slope_m0 <- lmerTest::lmer(F2_Slope ~ 1 + (1|Speaker), data = modelData)
+F2Slope_m0 <- lmerTest::lmer(F2_Slope ~ 1 + (1|Speaker), data = data_modelData)
 summary(F2Slope_m0)
 
 performance::icc(F2Slope_m0)
 ```
 M1
 ```{r}
-F2Slope_m1 <- lmerTest::lmer(F2_Slope ~ DBS_Status + (1|Speaker), data = modelData)
+F2Slope_m1 <- lmerTest::lmer(F2_Slope ~ DBS_Status + (1|Speaker), data = data_modelData)
 summary(F2Slope_m1)
 
 performance::check_model(F2Slope_m1)
@@ -230,7 +384,7 @@ anova(F2Slope_m0, F2Slope_m1)
 
 M2
 ```{r}
-F2Slope_m2 <- lmerTest::lmer(F2_Slope ~ DBS_Status + Sex + (1|Speaker), data = modelData)
+F2Slope_m2 <- lmerTest::lmer(F2_Slope ~ DBS_Status + Sex + (1|Speaker), data = data_modelData)
 summary(F2Slope_m2)
 
 performance::check_model(F2Slope_m2)
@@ -240,7 +394,9 @@ anova(F2Slope_m1, F2Slope_m2)
 ```
 M3
 ```{r}
-F2Slope_m3 <- lmerTest::lmer(F2_Slope ~ DBS_Status*Sex + (1|Speaker), data = modelData)
+F2Slope_m3 <- lmerTest::lmer(F2_Slope ~ DBS_Status*Sex +
+                               (1|Speaker),
+                             data = data_modelData)
 summary(F2Slope_m3)
 
 performance::check_model(F2Slope_m3)
@@ -248,16 +404,25 @@ performance::check_singularity(F2Slope_m3)
 
 anova(F2Slope_m2, F2Slope_m3)
 ```
+
 ## Final Model
 ```{r}
 F2Slope_fm <- F2Slope_m1
 summary(F2Slope_fm)
+
+# Saving the Model
+dir.create("Models", showWarnings = F)
+saveRDS(F2Slope_fm,
+        file = "Models/F2Slope_fm.rds")
+
+# Removing other models
+rm(list=ls(pattern="_m"))
 ```
 
 # 3. Corner Dispersion
 Model Data
 ```{r}
-modelData <- cornerDisp |>
+data_modelData <- data_cornerDisp |>
   dplyr::filter(Group == "PD_DBS") |>
   dplyr::mutate(Sex = factor(Sex, levels = c("F","M")))
 ```
@@ -265,13 +430,19 @@ modelData <- cornerDisp |>
 M0
 Fully Unconditional Model
 ```{r}
-cornerDisp_m0 <- lmerTest::lmer(eucDist ~ 1 + (1|Speaker) + (1|Word), data = modelData)
+cornerDisp_m0 <- lmerTest::lmer(eucDist ~ 1 +
+                                  (1|Speaker) +
+                                  (1|Vowel),
+                                data = data_modelData)
 summary(cornerDisp_m0)
 performance::icc(cornerDisp_m0)
 ```
 M1
 ```{r}
-cornerDisp_m1 <- lmerTest::lmer(eucDist ~ DBS_Status + (1|Speaker) + (1|Word), data = modelData)
+cornerDisp_m1 <- lmerTest::lmer(eucDist ~ DBS_Status +
+                                  (1|Speaker) +
+                                  (1|Vowel),
+                                data = data_modelData)
 summary(cornerDisp_m1)
 
 performance::check_singularity(cornerDisp_m1)
@@ -281,7 +452,10 @@ anova(cornerDisp_m0, cornerDisp_m1)
 
 M2
 ```{r}
-cornerDisp_m2 <- lmerTest::lmer(eucDist ~ DBS_Status + Sex + (1|Speaker) + (1|Word), data = modelData)
+cornerDisp_m2 <- lmerTest::lmer(eucDist ~ DBS_Status + Sex +
+                                  (1|Speaker) +
+                                  (1|Vowel),
+                                data = data_modelData)
 summary(cornerDisp_m2)
 
 performance::check_model(cornerDisp_m2)
@@ -292,7 +466,10 @@ anova(cornerDisp_m1, cornerDisp_m2)
 
 M3
 ```{r}
-cornerDisp_m3 <- lmerTest::lmer(eucDist ~ DBS_Status*Sex + (1|Speaker) + (1|Word), data = modelData)
+cornerDisp_m3 <- lmerTest::lmer(eucDist ~ DBS_Status*Sex +
+                                  (1|Speaker) +
+                                  (1|Vowel),
+                                data = data_modelData)
 summary(cornerDisp_m3)
 
 performance::check_model(cornerDisp_m3)
@@ -304,19 +481,27 @@ anova(cornerDisp_m2, cornerDisp_m3)
 ```{r}
 cornerDisp_fm <- cornerDisp_m1
 summary(cornerDisp_fm)
+
+# Saving the Model
+dir.create("Models", showWarnings = F)
+saveRDS(cornerDisp_fm,
+        file = "Models/cornerDisp_fm.rds")
+
+# Removing other models
+rm(list=ls(pattern="_m"))
 ```
 
 # 4. Artic Rate
 Model Data
 ```{r}
-modelData <- ArticRate |>
+data_modelData <- data_articRate |>
   dplyr::filter(Group == "PD_DBS")
 ```
 
 M0
 Fully Unconditional Model
 ```{r}
-articRate_m0 <- lmerTest::lmer(articRate ~ 1 + (1|Speaker), data = modelData)
+articRate_m0 <- lmerTest::lmer(articRate ~ 1 + (1|Speaker), data = data_modelData)
 summary(articRate_m0)
 
 performance::icc(articRate_m0)
@@ -324,7 +509,7 @@ performance::icc(articRate_m0)
 M1
 ```{r}
 
-articRate_m1 <- lmerTest::lmer(articRate ~ DBS_Status + (1|Speaker), data = modelData)
+articRate_m1 <- lmerTest::lmer(articRate ~ DBS_Status + (1|Speaker), data = data_modelData)
 summary(articRate_m1)
 
 performance::check_model(articRate_m1)
@@ -335,7 +520,7 @@ anova(articRate_m0, articRate_m1)
 M2
 ```{r}
 
-articRate_m2 <- lmerTest::lmer(articRate ~ DBS_Status + Sex + (1|Speaker), data = modelData)
+articRate_m2 <- lmerTest::lmer(articRate ~ DBS_Status + Sex + (1|Speaker), data = data_modelData)
 summary(articRate_m2)
 
 performance::check_model(articRate_m2)
@@ -346,7 +531,7 @@ anova(articRate_m1, articRate_m2)
 M3
 ```{r}
 
-articRate_m3 <- lmerTest::lmer(articRate ~ DBS_Status*Sex + (1|Speaker), data = modelData)
+articRate_m3 <- lmerTest::lmer(articRate ~ DBS_Status*Sex + (1|Speaker), data = data_modelData)
 summary(articRate_m3)
 
 performance::check_model(articRate_m3)
@@ -358,19 +543,27 @@ anova(articRate_m2, articRate_m3)
 ```{r}
 articRate_fm <- articRate_m1
 summary(articRate_fm)
+
+# Saving the Model
+dir.create("Models", showWarnings = F)
+saveRDS(articRate_fm,
+        file = "Models/articRate_fm.rds")
+
+# Removing other models
+rm(list=ls(pattern="_m"))
 ```
 
 
 # 5. F0 Semitone
 Model Data
 ```{r}
-modelData <- f0Data |>
+data_modelData <- data_f0Data |>
   dplyr::filter(Group == "PD_DBS")
 ```
 
 M0 - Fully Unconditional Model
 ```{r}
-F0_Semitone_m0 <- lmerTest::lmer(F0_Semitone ~ 1 + (1|Speaker), data = modelData)
+F0_Semitone_m0 <- lmerTest::lmer(F0_Semitone ~ 1 + (1|Speaker), data = data_modelData)
 summary(F0_Semitone_m0)
 
 performance::icc(F0_Semitone_m0)
@@ -378,7 +571,7 @@ performance::icc(F0_Semitone_m0)
 M1
 ```{r}
 
-F0_Semitone_m1 <- lmerTest::lmer(F0_Semitone ~ DBS_Status + (1|Speaker), data = modelData)
+F0_Semitone_m1 <- lmerTest::lmer(F0_Semitone ~ DBS_Status + (1|Speaker), data = data_modelData)
 summary(F0_Semitone_m1)
 
 performance::check_model(F0_Semitone_m1)
@@ -389,7 +582,7 @@ anova(F0_Semitone_m0, F0_Semitone_m1)
 M2
 ```{r}
 
-F0_Semitone_m2 <- lmerTest::lmer(F0_Semitone ~ DBS_Status + Sex + (1|Speaker), data = modelData)
+F0_Semitone_m2 <- lmerTest::lmer(F0_Semitone ~ DBS_Status + Sex + (1|Speaker), data = data_modelData)
 summary(F0_Semitone_m2)
 
 performance::check_model(F0_Semitone_m2)
@@ -400,7 +593,7 @@ anova(F0_Semitone_m1, F0_Semitone_m2)
 M3
 ```{r}
 
-F0_Semitone_m3 <- lmerTest::lmer(F0_Semitone ~ DBS_Status*Sex + (1|Speaker), data = modelData)
+F0_Semitone_m3 <- lmerTest::lmer(F0_Semitone ~ DBS_Status*Sex + (1|Speaker), data = data_modelData)
 summary(F0_Semitone_m3)
 
 performance::check_model(F0_Semitone_m3)
@@ -412,18 +605,26 @@ anova(F0_Semitone_m2, F0_Semitone_m3)
 ```{r}
 F0_Semitone_fm <- F0_Semitone_m1
 summary(F0_Semitone_fm)
+
+# Saving the Model
+dir.create("Models", showWarnings = F)
+saveRDS(F0_Semitone_fm,
+        file = "Models/F0_Semitone_fm.rds")
+
+# Removing other models
+rm(list=ls(pattern="_m"))
 ```
 
 # 6. dB Range
 Model Data
 ```{r}
-modelData <- dBData |>
+data_modelData <- data_dBData |>
   dplyr::filter(Group == "PD_DBS")
 ```
 
 M0 - Fully Unconditional Model
 ```{r}
-dB_range_m0 <- lmerTest::lmer(dB_range ~ 1 + (1|Speaker), data = modelData)
+dB_range_m0 <- lmerTest::lmer(dB_range ~ 1 + (1|Speaker), data = data_modelData)
 summary(dB_range_m0)
 
 performance::icc(dB_range_m0)
@@ -431,7 +632,7 @@ performance::icc(dB_range_m0)
 M1
 ```{r}
 
-dB_range_m1 <- lmerTest::lmer(dB_range ~ 1 + DBS_Status + (1|Speaker), data = modelData)
+dB_range_m1 <- lmerTest::lmer(dB_range ~ 1 + DBS_Status + (1|Speaker), data = data_modelData)
 summary(dB_range_m1)
 
 performance::check_model(dB_range_m1)
@@ -443,22 +644,325 @@ anova(dB_range_m0, dB_range_m1)
 ```{r}
 dB_range_fm <- dB_range_m1
 summary(dB_range_fm)
+
+# Saving the Model
+dir.create("Models", showWarnings = F)
+saveRDS(dB_range_fm,
+        file = "Models/dB_range_fm.rds")
+
+# Removing other models
+rm(list=ls(pattern="_m"))
 ```
 
-# Model Table
+# Tables
+
+## Table 3 - Descriptive Perceptual Measures
+```{r}
+SpeakerSex <- rio::import("DBS data/Project Progress - Speakers.csv") %>%
+  dplyr::rename(DBS_Status = 3) %>%
+  dplyr::mutate(Sex = as.factor(Sex),
+                Group = as.factor(Group),
+                Speaker = as.factor(Speaker),
+                DBS_Status = as.factor(DBS_Status)) |>
+  dplyr::select(Speaker, Sex) |>
+  unique()
+
+tableData <- rbind(data_listenerRatings,
+                   data_listenerRatings |>
+                     dplyr::mutate(Sex = "allSpeakers")) |>
+  dplyr::mutate(Sex = as.factor(Sex),
+                Rating = as.numeric(Rating)) |>
+  dplyr::group_by(Group, Sex, DBS_Status, Dimension) |>
+  dplyr::summarise(m = mean(Rating, na.rm = T),
+                   sd = sd(Rating, na.rm = T)) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(tableGroup = paste(Group,DBS_Status),
+                tableGroup = gsub(" ", "", tableGroup),
+                tableGroup = gsub("_", "-", tableGroup),
+                tableGroup = gsub("DBSOn", "DBS_On", tableGroup),
+                tableGroup = gsub("DBSOff", "DBS_Off", tableGroup),
+                tableGroup = as.factor(tableGroup)) |>
+  dplyr::select(tableGroup, Sex,Dimension, m, sd) |>
+  tidyr::pivot_wider(id_cols = Sex:Dimension,
+                     names_from = tableGroup,
+                     values_from = m:sd) |>
+  dplyr::select(Sex, Dimension,
+                `m_PD-DBS_Off`, `sd_PD-DBS_Off`,
+                `m_PD-DBS_On`, `sd_PD-DBS_On`) |>
+  dplyr::mutate(Dimension = factor(Dimension, 
+                                    levels = c("Int",
+                                               "LE",
+                                               "AP",
+                                               "VQ",
+                                               "Pro"))) |>
+  arrange(Dimension) |>
+  dplyr::mutate(
+    Dimension = case_when(
+      Dimension == "AP" ~ "Articulatory Precision (%)",
+      Dimension == "Int" ~ "Intelligibility (%)",
+      Dimension == "LE" ~ "Listening Effort (%)",
+      Dimension == "Pro" ~ "Prosody (%)",
+      Dimension == "VQ" ~ "Voice Quality (%)"
+    ),
+    Sex = case_when(
+      Sex == "F" ~ "Female Speakers",
+      Sex == "M" ~ "Male Speakers",
+      Sex == "allSpeakers" ~ "All Speakers"
+    )
+  ) |>
+  
+  # Creating the table
+  gt::gt(
+    rowname_col = "Dimension",
+    groupname_col = "Sex"
+  ) %>%
+  gt::fmt_number(
+    columns = 3:6,
+    decimals = 2
+  ) |>
+  gt::tab_spanner(
+    label = "Off",
+    columns = c(`m_PD-DBS_Off`,`sd_PD-DBS_Off`),
+    level = 1
+    ) |>
+  gt::tab_spanner(
+    label = "On",
+    columns = c(`m_PD-DBS_On`,`sd_PD-DBS_On`),
+    level = 1
+    ) |>
+  gt::tab_spanner(
+    label = "PD-DBS",
+    columns = c(`m_PD-DBS_On`,
+                `sd_PD-DBS_On`,
+                `m_PD-DBS_Off`,
+                `sd_PD-DBS_Off`),
+    level = 2
+    ) |>
+  gt::cols_label(
+    `m_PD-DBS_Off` = "M",
+    `m_PD-DBS_On` = "M",
+    `sd_PD-DBS_Off` = "SD",
+    `sd_PD-DBS_On` = "SD",
+  ) |>
+  gt::row_group_order(groups = c("All Speakers",
+                             "Female Speakers",
+                             "Male Speakers")) |>
+  gt::tab_options(row_group.as_column = TRUE) %>%
+  gt::gtsave(filename = "Tables/Table 3_Perceptual Descriptives.html")
+
+```
+
+## Table 4 - Perceptual Pairwise Table
+```{r}
+pairwiseTable_t <- function(emmsPair) {
+    summary_table <- summary(emmsPair, infer = TRUE) %>%
+      dplyr::mutate_at(.vars = c(
+        "estimate",
+        "SE",
+        "lower.CL",
+        "upper.CL",
+        "t.ratio"),
+        .funs = round,
+        digits = 2) %>%
+    dplyr::mutate(p.value = round(p.value, digits = 3),
+                  p.value = ifelse(p.value < .001,"<.001",p.value),
+                  CI = paste(lower.CL,upper.CL, sep = " - ")) %>%
+      dplyr::select(!lower.CL:upper.CL)
+    
+    return(summary_table)
+}
+
+ratingsAvg <- data_listenerRatings %>%
+  dplyr::filter(Group == "PD_DBS") %>%
+  dplyr::group_by(Dimension, DBS_Status) %>%
+  dplyr::summarise(M = mean(Rating, na.rm = T),
+                   SD = sd(Rating, na.rm = T)) %>%
+  tidyr::pivot_wider(id_cols = c(Dimension),
+                     names_from = DBS_Status,
+                     values_from = c(M, SD))
+
+pairwiseTable_t(pairs(emms)) %>%
+  dplyr::select(Dimension, contrast, estimate, CI, p.value) %>%
+  base::merge(., ratingsAvg) %>%
+  dplyr::relocate(M_Off:SD_On, .after = Dimension) %>%
+  dplyr::rename(Measure = Dimension,
+                Contrast = contrast,
+                Estimate = estimate,
+                p = p.value) %>%
+  dplyr::mutate(Measure = factor(Measure,
+                                 levels = c(
+                                   "Int",
+                                   "LE",
+                                   "AP",
+                                   "VQ",
+                                   "Pro"
+                                 ),
+                                 labels = c(
+                                   "Intelligibility",
+                                   "Listening Effort",
+                                   "Articulatory Precision",
+                                   "Voice Quality",
+                                   "Prosody"
+                                 ))) %>%
+  dplyr::mutate_at(.vars = c("M_Off",
+                             "SD_Off",
+                             "M_On",
+                             "SD_On"),
+                   .funs = round, digits = 2) %>%
+  dplyr::arrange(Measure) %>%
+  gt::gt() %>%
+  gt::tab_spanner(
+    columns = c(M_Off, SD_Off),
+    label = "DBS Off") %>%
+  gt::tab_spanner(
+    columns = c(M_On, SD_On),
+    label = "DBS On") %>%
+  gt::cols_label(
+    M_Off = "M",
+    SD_Off = "SD",
+    M_On = "M",
+    SD_On = "SD"
+  ) %>%
+  gt::gtsave(filename = "Table 4_Perceptual Pairwise Comparisons.html",
+             path = "Tables")
+```
+
+## Table 5 - Descriptive Acoustic Measures
+```{r}
+combinedData <- base::merge(
+  data_f0Data %>%
+    dplyr::filter(Group == "PD_DBS") %>%
+    dplyr::group_by(Speaker, Group, Sex, DBS_Status)  %>%
+    dplyr::summarise(F0_perActive = mean(F0_perActive),
+                     F0_Semitone = mean(F0_Semitone)),
+  
+  data_f2Slope %>%
+    dplyr::filter(Group == "PD_DBS") %>%
+    dplyr::group_by(Speaker, Group, Sex, DBS_Status)  %>%
+    dplyr::summarise(F2_Slope = mean(F2_Slope)),
+  all = T) %>%
+  
+  base::merge(.,
+              data_cornerDisp %>%
+                dplyr::filter(Group == "PD_DBS") %>%
+                dplyr::group_by(Speaker, Group, Sex, DBS_Status)  %>%
+                dplyr::summarise(eucDist = mean(eucDist)),
+              all = T) %>%
+  
+  base::merge(.,
+              data_articRate %>%
+                dplyr::filter(Group == "PD_DBS") %>%
+                dplyr::group_by(Speaker, Group, Sex, DBS_Status)  %>%
+                dplyr::summarise(articRate = mean(articRate)),
+              all = T) %>%
+  
+  base::merge(.,
+              data_dBData %>%
+                dplyr::filter(Group == "PD_DBS") %>%
+                dplyr::group_by(Speaker, Group, Sex, DBS_Status)  %>%
+                dplyr::summarise(dB_range = mean(dB_range)),
+              all = T)
+
+tableData <- rbind(combinedData, combinedData %>%
+                     dplyr::mutate(Sex = "All Speakers")) %>%
+  tidyr::pivot_longer(cols = F0_perActive:dB_range,
+                      names_to = "Measure") %>%
+  dplyr::group_by(Sex, Measure, DBS_Status) %>%
+  dplyr::summarise(M = mean(value, na.rm = T),
+                   sd = sd(value, na.rm = T)) %>%
+  tidyr::pivot_wider(
+    names_from = DBS_Status,
+    values_from = M:sd
+  ) %>%
+  dplyr::mutate(Sex = factor(Sex,
+                             levels = c(
+                               "All Speakers",
+                               "F",
+                               "M"
+                             ),
+                             labels = c(
+                               "All Speakers",
+                               "Female Speakers",
+                               "Male Speakers"
+                             )),
+                Measure = factor(Measure,
+                                 levels = c(
+                                   "F0_perActive",
+                                   "eucDist",
+                                   "F2_Slope",
+                                   "articRate",
+                                   "F0_Semitone",
+                                   "dB_range"
+                                 ),
+                                 labels = c(
+                                   "Voiced (%)",
+                                   "Corner Dispersion (Hz)",
+                                   "F2 Slope (Hz/ms)",
+                                   "Articulation Rate (syl/s)",
+                                   "F0 Variation (Semitone)",
+                                   "Intensity Variation (dB)"
+                                 ))) %>%
+  arrange(Measure) %>%
+
+  # Making the table
+  gt::gt(
+    rowname_col = "Measure",
+    groupname_col = "Sex"
+  ) %>%
+  gt::fmt_number(
+    columns = 2:6,
+    decimals = 2
+  ) |>
+  gt::tab_spanner(
+    label = "Off",
+    columns = c(`M_Off`,`sd_Off`),
+    level = 1
+    ) |>
+  gt::tab_spanner(
+    label = "On",
+    columns = c(`M_On`,`sd_On`),
+    level = 1
+    ) |>
+  gt::tab_spanner(
+    label = "PD-DBS",
+    columns = c(`M_Off`,`sd_Off`,
+                `M_On`,`sd_On`),
+    level = 2
+    ) |>
+  gt::cols_label(
+    `M_Off` = "M",
+    `M_On` = "M",
+    `sd_Off` = "SD",
+    `sd_On` = "SD",
+  ) |>
+  gt::row_group_order(groups = c("All Speakers",
+                             "Female Speakers",
+                             "Male Speakers")) |>
+  gt::tab_options(row_group.as_column = TRUE) %>%
+  gt::cols_align(
+    align = c("left"),
+    columns = c(Sex, Measure)) %>%
+  gt::gtsave(filename = "Tables/Table 5_Acoustic Descriptives.html")
+
+
+rm(combinedData)
+```
+
+
+## Table 6 - Acoustic Model Table
 ```{r}
 sjPlot::tab_model(
-  f0Data_fm,
-  F2Slope_fm,
-  cornerDisp_fm,
-  articRate_fm,
-  F0_Semitone_fm,
-  dB_range_fm,
+  base::readRDS(file = "Models/f0Data_fm.rds"),
+  base::readRDS(file = "Models/F2Slope_fm.rds"),
+  base::readRDS(file = "Models/cornerDisp_fm.rds"),
+  base::readRDS(file = "Models/articRate_fm.rds"),
+  base::readRDS(file = "Models/F0_Semitone_fm.rds"),
+  base::readRDS(file = "Models/dB_range_fm.rds"),
   show.p = T,
-  #show.reflvl = T,
+  show.reflvl = T,
   show.ci = F,
   p.style = "stars",
-  p.threshold = c(.007),
+  p.threshold = c(.007, .005, .001),
   emph.p = T,
   pred.labels = c(
   "(Intercept) DBS-Off",
@@ -468,7 +972,8 @@ sjPlot::tab_model(
                 "Vowel Dispersion (Hz)",
                 "Articulation Rate (syl/s)",
                 "F0 Variation (Semitone)",
-                "Intensity Variation (dB)")
+                "Intensity Variation (dB)"),
+  file = "Tables/Table 6_Acoustic Model Table.html"
 )
 ```
 
@@ -479,10 +984,128 @@ General info for plots
 pointSize <- 3
 ```
 
-## All Acoustic Measures
+## Figure 1 - All Perceptual Measures
+```{r}
+plotData <- data_listenerRatings_wide %>%
+  dplyr::group_by(Speaker, Sex, Group, DBS_Status) %>%
+  dplyr::summarise(AP = mean(AP, na.rm = T),
+                   Int = mean(Int, na.rm = T),
+                   LE = mean(LE, na.rm = T),
+                   Pro = mean(Pro, na.rm = T),
+                   VQ = mean(VQ, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(Speaker = factor(Speaker,
+                                 levels = c(
+                                   "PDDBS1",
+                                   "PDDBS2",
+                                   "PDDBS4",
+                                   "PDDBS5",
+                                   "PDDBS6",
+                                   "PDDBS7",
+                                   "PDDBS8",
+                                   "PDDBS9",
+                                   "PDDBS11"
+                                   ),
+                                 labels = c(
+                                   "PD-DBS1",
+                                   "PD-DBS2",
+                                   "PD-DBS4",
+                                   "PD-DBS5",
+                                   "PD-DBS6",
+                                   "PD-DBS7",
+                                   "PD-DBS8",
+                                   "PD-DBS9",
+                                   "PD-DBS11"
+                                 ))) %>%
+  dplyr::filter(Group == "PD_DBS") %>%
+  dplyr::group_by(Speaker,Sex,DBS_Status) %>%
+  dplyr::summarise(Int = mean(Int, na.rm = T),
+                   AP = mean(AP, na.rm = T),
+                   LE = mean(LE, na.rm = T),
+                   Pro = mean(Pro, na.rm = T),
+                   VQ = mean(VQ, na.rm = T)) %>%
+  tidyr::pivot_longer(cols = Int:VQ,
+                      names_to = "Measure",
+                      values_to = "Value") %>%
+  dplyr::mutate(Measure = factor(Measure,
+                                 levels = c(
+                                   "Int",
+                                   "AP",
+                                   "LE",
+                                   "VQ",
+                                   "Pro"
+                                 ),
+                                 labels = c(
+                                   "Intelligibility",
+                                   "Articulatory Precision",
+                                   "Listening Effort",
+                                   "Voice Quality",
+                                   "Prosody"
+                                   )),
+                label = gsub("[^0-9.-]", "", Speaker),
+                label = gsub("-", "", label))
+
+
+plot <- plotData %>%
+  ggplot() +
+  aes(x = DBS_Status,
+      y = Value,
+      group = Speaker) +
+  
+  # Plotting the line
+  geom_line(
+    color = "black",
+    linetype = "longdash",
+    position = position_dodge(width = 0.3)) +
+  
+  # Plotting the points, color by Speaker
+  geom_point(
+    size = pointSize,
+    position = position_dodge(width = 0.3)) +
+
+  # Labels
+  geom_text(aes(label = label),
+            color = "white",
+            size = 2,
+            fontface = "bold",
+    position = position_dodge(width = 0.3)) +
+  
+  # Mean line
+  geom_smooth(method = "lm",
+              show.legend = T,
+              se = F,
+              inherit.aes = F,
+              aes(x = DBS_Status,
+                  y = Value,
+                  group = Measure)) +
+  
+  # Scaling & fixing the theme
+  labs(x = "DBS Status",
+       y = "Percent (%)") +
+  
+  # Wrap by Measure
+  facet_wrap(~Measure, scales = "free_y") +
+  
+  theme_classic() +
+  theme(aspect.ratio = 1)
+
+plot
+
+ggsave(filename = "Figures/Figure 1_Perceptual Measures.png",
+       plot = plot,
+       height = 4,
+       width = 6,
+       units = "in",
+       scale = 1.2)
+
+# Removing other models
+
+```
+
+## Figure 2 - All Acoustic Measures
 ```{r}
 # Voicing Proportion ----
-plotData_F0_perActive <- f0Data %>%
+plotData_F0_perActive <- data_f0Data %>%
   dplyr::filter(Group == "PD_DBS") %>%
   dplyr::group_by(Speaker,Sex,DBS_Status) %>%
   dplyr::summarise(F0_perActive = mean(F0_perActive, na.rm = T)) %>%
@@ -490,7 +1113,7 @@ plotData_F0_perActive <- f0Data %>%
                       names_to = "Measure",
                       values_to = "Value")
 # F2 Slope ----
-plotData_F2Slope <- F2Slope %>%
+plotData_F2Slope <- data_f2Slope %>%
   dplyr::filter(Group == "PD_DBS") %>%
   dplyr::group_by(Speaker,Sex,DBS_Status) %>%
   dplyr::summarise(F2_Slope = mean(F2_Slope, na.rm = T)) %>%
@@ -498,7 +1121,7 @@ plotData_F2Slope <- F2Slope %>%
                       names_to = "Measure",
                       values_to = "Value")
 # Corner Dispersion ----
-plotData_cornerDisp <- cornerDisp |>
+plotData_cornerDisp <- data_cornerDisp |>
   dplyr::filter(Group == "PD_DBS") |>
   dplyr::mutate(Sex = factor(Sex, levels = c("F","M"))) %>%
   dplyr::group_by(Speaker, Sex, DBS_Status) |>
@@ -508,7 +1131,7 @@ plotData_cornerDisp <- cornerDisp |>
                       names_to = "Measure",
                       values_to = "Value")
 # Artic Rate ----
-plotData_articRate <- ArticRate |>
+plotData_articRate <- data_articRate |>
   dplyr::filter(Group == "PD_DBS") %>%
   dplyr::group_by(Speaker, Sex, DBS_Status) |>
   dplyr::summarise(articRate = mean(articRate, na.rm = T)) %>%
@@ -517,7 +1140,7 @@ plotData_articRate <- ArticRate |>
                       values_to = "Value")
 
 # F0 Semitone ----
-plotData_F0variation <- f0Data %>%
+plotData_F0variation <- data_f0Data %>%
   dplyr::filter(Group == "PD_DBS") %>%
   dplyr::group_by(Speaker,Sex,DBS_Status) %>%
   dplyr::summarise(F0_Semitone = mean(F0_Semitone, na.rm = T)) %>%
@@ -526,7 +1149,7 @@ plotData_F0variation <- f0Data %>%
                       values_to = "Value")
 
 # dB Variation ----
-plotData_dBvariation <- dBData |>
+plotData_dBvariation <- data_dBData |>
   dplyr::filter(Group == "PD_DBS") %>%
   dplyr::group_by(Speaker,Sex,DBS_Status) %>%
   dplyr::summarise(dB_range = mean(dB_range, na.rm = T)) %>%
@@ -630,18 +1253,21 @@ plot <- plotData %>%
 
 plot
 
-ggsave(filename = "Figures/Acoustic Measures.png",
+ggsave(filename = "Figures/Figure 2_Acoustic Measures.png",
        plot = plot,
        height = 4,
        width = 6,
        units = "in",
        scale = 1.2)
+
+# Removing other models
+rm(list=ls(pattern="plotData"))
 ```
 
-## Vowel Dispersion by vowel
+## Figure 3 - Vowel Dispersion by vowel
 ```{r}
 # Corner Dispersion ----
-plotData_cornerDisp <- cornerDisp |>
+plotData_cornerDisp <- data_cornerDisp |>
   dplyr::filter(Group == "PD_DBS") |>
   dplyr::mutate(Sex = factor(Sex, levels = c("F","M"))) %>%
   dplyr::group_by(Speaker, Sex, Word, DBS_Status) |>
@@ -741,7 +1367,7 @@ plot_vowelDisp <- plotData_cornerDisp %>%
   
   # Scaling & fixing the theme
   labs(x = "DBS Status",
-       y = "") +
+       y = "Hz") +
   
   # Wrap by Measure
   facet_wrap(~Word, scales = "free_y") +
@@ -751,11 +1377,13 @@ plot_vowelDisp <- plotData_cornerDisp %>%
 
 plot_vowelDisp
 
-ggsave(filename = "Figures/Vowel Dispersion by Vowel.png",
+ggsave(filename = "Figures/Figure 3_Vowel Dispersion by Vowel.png",
        plot = plot_vowelDisp,
        height = 4,
        width = 4,
        units = "in",
        scale = 1.3)
+
+rm(plot_vowelDisp)
 ```
 

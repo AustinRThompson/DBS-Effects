@@ -104,7 +104,6 @@ modelData <- listenerRatings %>%
   dplyr::filter(Group == "PD_DBS")
 ```
 
-## Models
 M0
 ```{r}
 ratings_m0 <- lmerTest::lmer(Rating ~ 1 + (1|Speaker) + (1|ListenerID), data = modelData)
@@ -138,6 +137,12 @@ performance::check_singularity(ratings_m2)
 
 anova(ratings_m1, ratings_m2)
 ```
+## Final Model
+```{r}
+ratings_fm <- ratings_m2
+summary(ratings_fm)
+```
+
 ```{r}
 # Load the required package
 library(emmeans)
