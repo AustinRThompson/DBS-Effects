@@ -1,4 +1,5 @@
-# DBS-Effects
+# Effects of Deep-Brain Stimulation on Speech: Perceptual and Acoustic Data![image](https://github.com/AustinRThompson/DBS-Effects/assets/49349376/8900db54-3623-4d52-8b3c-32c4faecb86a)
+
 **Purpose:** This study examined speech changes induced by deep-brain stimulation (DBS) in speakers with Parkinson’s disease (PD) using a set of auditory-perceptual and acoustic measures.
 
 **Method:** Three speaker groups participated in the study, one group of speakers with PD and with DBS (PD-DBS group) and two reference groups, (1) speakers with PD and without DBS (PD group) and (2) neurologically healthy speakers. Auditory-perceptual ratings included voice quality, articulation precision, prosody, speech intelligibility, and listening effort obtained from 44 listeners. Acoustic measures were made for voicing proportion, second formant frequency slope, vowel dispersion, articulation rate, and range of fundamental frequency and intensity. 
