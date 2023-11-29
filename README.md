@@ -1,4 +1,4 @@
-# Effects of Deep-Brain Stimulation on Speech: Perceptual and Acoustic Data![image](https://github.com/AustinRThompson/DBS-Effects/assets/49349376/8900db54-3623-4d52-8b3c-32c4faecb86a)
+# Effects of Deep-Brain Stimulation on Speech: Perceptual and Acoustic Data
 
 **Purpose:** This study examined speech changes induced by deep-brain stimulation (DBS) in speakers with Parkinson’s disease (PD) using a set of auditory-perceptual and acoustic measures.
 
