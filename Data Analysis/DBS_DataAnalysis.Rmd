@@ -5,42 +5,31 @@ title: "DBS Effects: Data Analysis"
 # Packages
 ```{r}
 library(tidyverse) # install.packages("rlang")
-library(emmeans)
+library(emmeans) # install.packages("emmeans")
 library(sjPlot) # install.packages("sjPlot")
 library(imputeTS) # install.packages('imputeTS')
-
-library(ggrepel)
-library(sp)
-
-library(ggpubr)
+library(sp) # install.packages("sp")
 library(lmerTest) # install.packages("lmerTest")
 library(performance) # install.packages("performance")
-library(patchwork)
-library(gt)
+library(gt) # install.packages("gt")
 
 ```
 
 # Load the Data
 ```{r}
-speakerList <- rio::import("DBS data/Project Progress - Speakers.csv") %>%
-  dplyr::rename(DBS_Status = 3) %>%
-  dplyr::mutate(Sex = as.factor(Sex),
-                Group = as.factor(Group),
-                Speaker = as.factor(Speaker),
-                DBS_Status = as.factor(DBS_Status))
 
-SpeakerSex <- speakerList |>
+speakerList <- rio::import(file = "Prepped Data/Speaker List.csv") |>
   dplyr::select(Speaker, Sex) |>
   unique()
 
 # Perceptual Ratings ----
-data_listenerRatings <- rio::import(file = "Prepped Data/Perceptual Data/Listener Ratings.csv") |>
+data_listenerRatings <- rio::import(file = "Prepped Data/Listener Ratings.csv") |>
   dplyr::mutate(ListenerID = as.factor(ListenerID),
                 Speaker = as.factor(Speaker),
                 Group = as.factor(Group),
                 DBS_Status = as.factor(DBS_Status),
                 Dimension = as.factor(ratingType)) %>%
-    base::merge(., SpeakerSex) %>%
+    base::merge(., speakerList) %>%
   dplyr::filter(Group == "PD_DBS")
 
 data_listenerRatings_wide <- data_listenerRatings |>
@@ -54,7 +43,7 @@ data_articRate <- rio::import("Prepped Data/Artic Rate.csv") |>
                   Speaker = as.factor(Speaker),
                   DBS_Status = as.factor(DBS_Status),
                   Segment = "BabyBirds") |>
-  base::merge(SpeakerSex) |>
+  base::merge(speakerList) |>
   dplyr::relocate(Sex, .after = Group)
 
 
@@ -63,7 +52,7 @@ data_f2Slope <- rio::import("Prepped Data/F2 Slope Data.csv") |>
     dplyr::mutate(Group = as.factor(Group),
                   Speaker = as.factor(Speaker),
                   DBS_Status = as.factor(DBS_Status)) |>
-  base::merge(SpeakerSex) |>
+  base::merge(speakerList) |>
   dplyr::relocate(Sex, .after = Group)
 
 # Corner Dispersion
@@ -72,7 +61,7 @@ data_cornerDisp <- rio::import("Prepped Data/CornerDisp.csv") |>
                   Speaker = as.factor(Speaker),
                   DBS_Status = as.factor(DBS_Status),
                   Vowel = as.factor(Word)) |>
-  base::merge(SpeakerSex) |>
+  base::merge(speakerList) |>
   dplyr::relocate(Sex, .after = Group)
 
 # dB Data
@@ -90,7 +79,7 @@ data_dBData <- rio::import("Prepped Data/dB Data.csv") |>
                     "Off",
                     DBS_Status),
                   DBS_Status = as.factor(DBS_Status)) |>
-  base::merge(SpeakerSex) |>
+  base::merge(speakerList) |>
   dplyr::relocate(Sex, .after = Group)
 
 # F0 Data
@@ -109,7 +98,7 @@ data_f0Data <- rio::import("Prepped Data/F0 Data.csv") |>
                     DBS_Status),
                   DBS_Status = as.factor(DBS_Status),
                   F0_Semitone = ifelse(F0_Semitone < -20,NA,F0_Semitone)) |>
-  base::merge(SpeakerSex) |>
+  base::merge(speakerList) |>
   dplyr::relocate(Sex, .after = Group)
 
 alpha <- .05 / 7
@@ -163,7 +152,7 @@ inter_Off <- data_interListener$Off %>%
   map(\(df) dplyr::select(!ListenerID, .data = df)) %>%
   map(~psych::ICC(as.matrix(.))$results) %>%
   bind_rows(.id = "Dimension")  %>%
-  dplyr::filter(type == "ICC3k") # ICC3k == Consistency, ICC2k == absolute agreement
+  dplyr::filter(type == "ICC3k") # ICC3k == Consistency
 
 inter_On <- data_interListener$On %>%
     split(.$Dimension) %>%
@@ -189,7 +178,9 @@ inter_Rel <- rbind(inter_Off %>%
                    inter_On %>%
                      dplyr::mutate(DBS_Status = "On")) %>%
   dplyr::mutate(
-    p.value = ifelse(p < .001, "p < .001",paste0("p = ",numformat(p, digits = 3))),
+    p.value = ifelse(p < .001, "< .001",paste0("",numformat(p, digits = 3))),
+    ci.range = paste0(round(.$`lower bound`, digits = 2),
+      " - ", round(.$`upper bound`, digits = 2)),
     Interrater = paste0(
       round(.$ICC, digits = 2),
       " (",
@@ -198,23 +189,31 @@ inter_Rel <- rbind(inter_Off %>%
       ", ",
       p.value,
       ")"
-  ))
+  )) %>%
+  dplyr::select(Dimension, DBS_Status, Interrater, ICC, ci.range, p.value) %>%
+  pivot_wider(
+    names_from = DBS_Status,
+    values_from = c(Interrater, ICC, ci.range, p.value)
+  ) %>%
+  dplyr::filter(Dimension != "LE") %>%
+  dplyr::mutate(Dimension = factor(Dimension,
+                                   levels = c(
+                                     "Int",
+                                     "AP",
+                                     "VQ",
+                                     "Pro"
+                                   ),
+                                   labels = c(
+                                     "Intelligibility",
+                                     "Articulatory Precision",
+                                     "Voice Quality",
+                                     "Prosody"
+                                   ))) %>%
+  arrange(Dimension)
+ 
 
-t_NA <- inter_Off$Int
-
-t <- inter_Off$Int %>%
-  imputeTS::na_mean()
-
-data_interListener_off <- data_interListener %>%
-  split(.$Dimension) %>%
-  map(\(df) tidyr::pivot_wider(
-    id_cols = ListenerID,
-    names_from = Speaker,
-    values_from = Rating,
-    data = df
-  ))
-
-
+# Removing unneeded variables
+rm(inter_Off, inter_On)
 ```
 
 
@@ -655,11 +654,46 @@ rm(list=ls(pattern="_m"))
 ```
 
 # Tables
-
-## Table 3 - Descriptive Perceptual Measures
+## Table 3 - Interrater Listener Reliability
 ```{r}
-SpeakerSex <- rio::import("DBS data/Project Progress - Speakers.csv") %>%
-  dplyr::rename(DBS_Status = 3) %>%
+inter_Rel %>%
+  dplyr::select(!c(Interrater_Off, Interrater_On)) %>%
+  gt() %>%
+  gt::tab_spanner(
+    label = "Off",
+    columns = c(ICC_Off, ci.range_Off, p.value_Off)
+  ) %>%
+  gt::tab_spanner(
+    label = "On",
+    columns = c(ICC_On, ci.range_On, p.value_On)
+  ) %>%
+  gt::cols_label(
+    `ICC_Off` = "ICC",
+    `ICC_On` = "ICC",
+    `ci.range_Off` = "95% CI",
+    `ci.range_On` = "95% CI",
+    `p.value_Off` = "p",
+    `p.value_On` = "p",
+  ) %>%
+  gt::cols_align(
+    align = c("right"),
+    columns = c(p.value_Off, p.value_On)) %>%
+  gt::cols_align(
+    align = c("left"),
+    columns = c(Dimension)) %>%
+  gt::fmt_number(
+    columns = c(ICC_Off, ICC_On),
+    decimals = 2
+  ) %>%
+  gt::gtsave(
+    filename = "Tables/Table 3_Interrater Reliability.html"
+  )
+
+```
+
+## Table 4 - Descriptive Perceptual Measures
+```{r}
+SpeakerSex <- rio::import("Prepped Data/Speaker List.csv") %>%
   dplyr::mutate(Sex = as.factor(Sex),
                 Group = as.factor(Group),
                 Speaker = as.factor(Speaker),
@@ -748,11 +782,11 @@ tableData <- rbind(data_listenerRatings,
                              "Female Speakers",
                              "Male Speakers")) |>
   gt::tab_options(row_group.as_column = TRUE) %>%
-  gt::gtsave(filename = "Tables/Table 3_Perceptual Descriptives.html")
+  gt::gtsave(filename = "Tables/Table 4_Perceptual Descriptives.html")
 
 ```
 
-## Table 4 - Perceptual Pairwise Table
+## Table 5 - Perceptual Pairwise Table
 ```{r}
 pairwiseTable_t <- function(emmsPair) {
     summary_table <- summary(emmsPair, infer = TRUE) %>%
@@ -823,11 +857,11 @@ pairwiseTable_t(pairs(emms)) %>%
     M_On = "M",
     SD_On = "SD"
   ) %>%
-  gt::gtsave(filename = "Table 4_Perceptual Pairwise Comparisons.html",
+  gt::gtsave(filename = "Table 5_Perceptual Pairwise Comparisons.html",
              path = "Tables")
 ```
 
-## Table 5 - Descriptive Acoustic Measures
+## Table 6 - Descriptive Acoustic Measures
 ```{r}
 combinedData <- base::merge(
   data_f0Data %>%
@@ -942,14 +976,14 @@ tableData <- rbind(combinedData, combinedData %>%
   gt::cols_align(
     align = c("left"),
     columns = c(Sex, Measure)) %>%
-  gt::gtsave(filename = "Tables/Table 5_Acoustic Descriptives.html")
+  gt::gtsave(filename = "Tables/Table 6_Acoustic Descriptives.html")
 
 
 rm(combinedData)
 ```
 
 
-## Table 6 - Acoustic Model Table
+## Table 7 - Acoustic Model Table
 ```{r}
 sjPlot::tab_model(
   base::readRDS(file = "Models/f0Data_fm.rds"),
@@ -973,7 +1007,7 @@ sjPlot::tab_model(
                 "Articulation Rate (syl/s)",
                 "F0 Variation (Semitone)",
                 "Intensity Variation (dB)"),
-  file = "Tables/Table 6_Acoustic Model Table.html"
+  file = "Tables/Table 7_Acoustic Model Table.html"
 )
 ```
 
