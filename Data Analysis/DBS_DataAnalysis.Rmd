@@ -1043,13 +1043,13 @@ plotData <- data_listenerRatings_wide %>%
                                  labels = c(
                                    "PD-DBS1",
                                    "PD-DBS2",
+                                   "PD-DBS3",
                                    "PD-DBS4",
                                    "PD-DBS5",
                                    "PD-DBS6",
                                    "PD-DBS7",
                                    "PD-DBS8",
-                                   "PD-DBS9",
-                                   "PD-DBS11"
+                                   "PD-DBS9"
                                  ))) %>%
   dplyr::filter(Group == "PD_DBS") %>%
   dplyr::group_by(Speaker,Sex,DBS_Status) %>%
@@ -1214,13 +1214,13 @@ plotData <- rbind(
                                  labels = c(
                                    "PD-DBS1",
                                    "PD-DBS2",
+                                   "PD-DBS3",
                                    "PD-DBS4",
                                    "PD-DBS5",
                                    "PD-DBS6",
                                    "PD-DBS7",
                                    "PD-DBS8",
-                                   "PD-DBS9",
-                                   "PD-DBS11"
+                                   "PD-DBS9"
                                  )),
                 Measure = factor(Measure,
                                  levels = c(
@@ -1325,13 +1325,13 @@ plotData_cornerDisp <- data_cornerDisp |>
                                  labels = c(
                                    "PD-DBS1",
                                    "PD-DBS2",
+                                   "PD-DBS3",
                                    "PD-DBS4",
                                    "PD-DBS5",
                                    "PD-DBS6",
                                    "PD-DBS7",
                                    "PD-DBS8",
-                                   "PD-DBS9",
-                                   "PD-DBS11"
+                                   "PD-DBS9"
                                  )),
                 Measure = factor(Measure,
                                  levels = c(
